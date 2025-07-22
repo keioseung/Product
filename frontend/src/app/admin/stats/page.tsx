@@ -39,16 +39,37 @@ export default function AdminStatsPage() {
     
     try {
       console.log('📊 관리자 통계 데이터 로딩 중...')
+      console.log('🔐 현재 토큰:', localStorage.getItem('access_token') ? '있음' : '없음')
+      console.log('👤 현재 사용자:', localStorage.getItem('currentUser'))
+      
       const response = await systemAPI.getAdminStats()
+      console.log('📡 API 응답 전체:', response)
       
       if (response.success) {
         console.log('✅ DB 연결 통계 데이터:', response.stats)
         setStats(response.stats)
       } else {
-        throw new Error('Failed to load admin stats')
+        console.warn('⚠️ API 응답에 success가 false:', response)
+        throw new Error('API returned success: false')
       }
     } catch (err: any) {
       console.error('❌ 관리자 통계 로딩 실패:', err)
+      console.error('📄 에러 상세:', err.response)
+      console.error('🔍 상태 코드:', err.response?.status)
+      console.error('📝 에러 메시지:', err.response?.data)
+      
+      // 에러가 발생했을 때 기본값으로 폴백
+      const fallbackStats = {
+        totalUsers: 0,
+        activeUsers: 0,
+        totalQuizzes: 0,
+        totalContent: 0,
+        recentActivity: [{ user: '에러', action: 'API 호출 실패', time: '방금 전' }],
+        popularTopics: [{ name: 'API 연결 실패', count: 0 }],
+        weeklyProgress: [{ day: '오류', users: 0, quizzes: 0 }]
+      }
+      setStats(fallbackStats)
+      
       setError(err.response?.data?.detail || err.message || '통계를 불러오는데 실패했습니다.')
     } finally {
       setLoading(false)

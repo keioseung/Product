@@ -125,8 +125,8 @@ export default function UserManagementPage() {
                   <FaUsers className="text-sm sm:text-xl text-white" />
                 </div>
                 <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-white via-purple-200 to-pink-200 bg-clip-text text-transparent">
-                  회원 관리
-                </h1>
+                회원 관리
+              </h1>
               </div>
               <p className="text-xs sm:text-sm text-white/60 mt-1 hidden sm:block">시스템 사용자를 관리하고 권한을 설정하세요</p>
             </div>
@@ -138,13 +138,13 @@ export default function UserManagementPage() {
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
             <div className="flex-1 relative">
               <FaSearch className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-white/50 text-sm sm:text-base" />
-              <input
-                type="text"
+            <input
+              type="text"
                 placeholder="사용자명 또는 이메일로 검색..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-8 sm:pl-12 pr-3 sm:pr-4 py-2 sm:py-3 bg-white/10 border border-white/20 rounded-lg sm:rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all text-sm sm:text-base"
-              />
+            />
             </div>
           </div>
         </div>
@@ -166,11 +166,11 @@ export default function UserManagementPage() {
               <FaUsers className="text-purple-400 text-sm sm:text-base" />
               전체 사용자 ({filteredUsers.length}명)
             </h2>
-          </div>
+            </div>
           
           {/* 데스크톱 테이블 뷰 */}
           <div className="hidden lg:block overflow-x-auto">
-            <table className="w-full">
+              <table className="w-full">
               <thead>
                 <tr className="border-b border-white/10">
                   <th className="text-left py-4 px-6 text-white/80 font-medium">사용자</th>
@@ -179,20 +179,20 @@ export default function UserManagementPage() {
                   <th className="text-left py-4 px-6 text-white/80 font-medium">가입일</th>
                   <th className="text-left py-4 px-6 text-white/80 font-medium">상태</th>
                   <th className="text-center py-4 px-6 text-white/80 font-medium">관리</th>
-                </tr>
-              </thead>
-              <tbody>
+                  </tr>
+                </thead>
+                <tbody>
                 {filteredUsers.map((user) => (
                   <tr key={user.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
                     <td className="py-4 px-6">
-                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3">
                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
                           user.role === 'admin' 
                             ? 'bg-gradient-to-r from-red-500 to-pink-500' 
                             : 'bg-gradient-to-r from-blue-500 to-purple-500'
                         }`}>
                           {user.role === 'admin' ? <FaUserShield className="text-white" /> : <FaUser className="text-white" />}
-                        </div>
+                          </div>
                         <div>
                           <div className="text-white font-medium">{user.username}</div>
                           <div className="text-white/60 text-sm">ID: {user.id}</div>
@@ -201,17 +201,17 @@ export default function UserManagementPage() {
                     </td>
                     <td className="py-4 px-6 text-white/80">
                       {user.email || '-'}
-                    </td>
+                      </td>
                     <td className="py-4 px-6">
-                      <select
-                        value={user.role}
+                        <select
+                          value={user.role}
                         onChange={(e) => handleRoleChange(user.id, e.target.value as 'admin' | 'user')}
-                        className="bg-white/10 border border-white/20 rounded-lg px-3 py-1 text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50"
-                      >
+                          className="bg-white/10 border border-white/20 rounded-lg px-3 py-1 text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                        >
                         <option value="user">일반 사용자</option>
                         <option value="admin">관리자</option>
-                      </select>
-                    </td>
+                        </select>
+                      </td>
                     <td className="py-4 px-6 text-white/80 text-sm">
                       {new Date(user.created_at).toLocaleDateString('ko-KR')}
                     </td>
@@ -226,18 +226,18 @@ export default function UserManagementPage() {
                     </td>
                     <td className="py-4 px-6">
                       <div className="flex items-center justify-center gap-2">
-                        <button
-                          onClick={() => handleDeleteUser(user)}
+                          <button
+                            onClick={() => handleDeleteUser(user)}
                           className="w-8 h-8 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 rounded-lg flex items-center justify-center text-red-400 hover:text-red-300 transition-all"
-                        >
+                          >
                           <FaTrash className="text-xs" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
           </div>
 
           {/* 모바일 카드 뷰 - 더 컴팩트하게 */}
@@ -302,9 +302,9 @@ export default function UserManagementPage() {
             ))}
           </div>
             
-          {filteredUsers.length === 0 && (
+            {filteredUsers.length === 0 && (
             <div className="text-center py-8 sm:py-12 text-white/60 text-sm sm:text-base">
-              검색 결과가 없습니다.
+                검색 결과가 없습니다.
             </div>
           )}
         </div>

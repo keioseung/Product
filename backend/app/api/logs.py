@@ -60,7 +60,11 @@ def get_logs(
 ):
     """활동 로그 목록을 조회합니다. (관리자만)"""
     
+    print(f"🔍 로그 조회 요청 - 사용자: {current_user.username}, 역할: {current_user.role}")
+    print(f"📊 조회 파라미터: skip={skip}, limit={limit}, log_type={log_type}, log_level={log_level}")
+    
     if current_user.role != 'admin':
+        print(f"❌ 권한 없음 - 사용자 역할: {current_user.role} (admin 필요)")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions"

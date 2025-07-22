@@ -1,9 +1,10 @@
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from datetime import datetime
 import os
 
-from app.api import ai_info, quiz, prompt, base_content, term, auth, logs, system
+from app.api import ai_info, quiz, prompt, base_content, term, auth, logs, system, user_progress
 
 app = FastAPI()
 
@@ -36,7 +37,22 @@ async def health_check():
 @app.options("/{path:path}")
 async def options_handler(path: str):
     """OPTIONS 요청을 명시적으로 처리"""
+    print(f"🔄 OPTIONS 요청 처리: {path}")
     return {"message": "OK"}
+
+@app.middleware("http")
+async def log_requests(request, call_next):
+    """모든 요청을 로깅하는 미들웨어"""
+    start_time = datetime.now()
+    print(f"📥 요청: {request.method} {request.url}")
+    print(f"🔐 헤더 Authorization: {'있음' if request.headers.get('authorization') else '없음'}")
+    
+    response = await call_next(request)
+    
+    process_time = (datetime.now() - start_time).total_seconds()
+    print(f"📤 응답: {response.status_code} ({process_time:.3f}s)")
+    
+    return response
 
 # 전역 예외 처리기
 @app.exception_handler(Exception)
@@ -57,6 +73,7 @@ async def not_found_handler(request: Request, exc: HTTPException):
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(logs.router, prefix="/api/logs", tags=["Activity Logs"])
 app.include_router(system.router, prefix="/api/system", tags=["System Management"])
+app.include_router(user_progress.router, prefix="/api/user-progress", tags=["User Progress"])
 app.include_router(ai_info.router, prefix="/api/ai-info")
 app.include_router(quiz.router, prefix="/api/quiz")
 app.include_router(prompt.router, prefix="/api/prompt")

@@ -662,4 +662,152 @@ def get_period_stats(session_id: str, start_date: str, end_date: str, db: Sessio
         'start_date': start_date,
         'end_date': end_date,
         'total_days': len(period_data)
+    }
+
+@router.get("/stats/{session_id}")
+def get_user_stats(session_id: str, db: Session = Depends(get_db)):
+    """사용자 통계 정보를 조회합니다 (대시보드용)"""
+    from datetime import datetime, timedelta
+    
+    today = datetime.now().strftime('%Y-%m-%d')
+    
+    # 오늘 AI 정보 학습 수
+    today_ai_progress = db.query(UserProgress).filter(
+        UserProgress.session_id == session_id,
+        UserProgress.date == today
+    ).first()
+    
+    today_ai_info = 0
+    if today_ai_progress and today_ai_progress.learned_info:
+        try:
+            today_ai_info = len(json.loads(today_ai_progress.learned_info))
+        except json.JSONDecodeError:
+            pass
+    
+    # 오늘 용어 학습 수
+    today_terms_progress = db.query(UserProgress).filter(
+        UserProgress.session_id == session_id,
+        UserProgress.date.like(f'__terms__{today}%')
+    ).all()
+    
+    today_terms = 0
+    unique_terms = set()
+    for term_progress in today_terms_progress:
+        if term_progress.learned_info:
+            try:
+                terms = json.loads(term_progress.learned_info)
+                unique_terms.update(terms)
+            except json.JSONDecodeError:
+                continue
+    today_terms = len(unique_terms)
+    
+    # 오늘 퀴즈 점수
+    today_quiz_progress = db.query(UserProgress).filter(
+        UserProgress.session_id == session_id,
+        UserProgress.date.like(f'__quiz__{today}%')
+    ).all()
+    
+    today_quiz_score = 0
+    today_quiz_correct = 0
+    today_quiz_total = 0
+    
+    for quiz_progress in today_quiz_progress:
+        if quiz_progress.stats:
+            try:
+                quiz_data = json.loads(quiz_progress.stats)
+                today_quiz_correct += quiz_data.get('correct', 0)
+                today_quiz_total += quiz_data.get('total', 0)
+            except json.JSONDecodeError:
+                continue
+    
+    if today_quiz_total > 0:
+        today_quiz_score = int((today_quiz_correct / today_quiz_total) * 100)
+    
+    # 총 학습량 계산
+    all_ai_progress = db.query(UserProgress).filter(
+        UserProgress.session_id == session_id,
+        ~UserProgress.date.like('__%')
+    ).all()
+    
+    total_learned = 0
+    for progress in all_ai_progress:
+        if progress.learned_info:
+            try:
+                total_learned += len(json.loads(progress.learned_info))
+            except json.JSONDecodeError:
+                continue
+    
+    # 총 용어 학습량
+    all_terms_progress = db.query(UserProgress).filter(
+        UserProgress.session_id == session_id,
+        UserProgress.date.like('__terms__%')
+    ).all()
+    
+    total_terms_learned = 0
+    all_unique_terms = set()
+    for term_progress in all_terms_progress:
+        if term_progress.learned_info:
+            try:
+                terms = json.loads(term_progress.learned_info)
+                all_unique_terms.update(terms)
+            except json.JSONDecodeError:
+                continue
+    total_terms_learned = len(all_unique_terms)
+    
+    # 누적 퀴즈 점수
+    all_quiz_progress = db.query(UserProgress).filter(
+        UserProgress.session_id == session_id,
+        UserProgress.date.like('__quiz__%')
+    ).all()
+    
+    cumulative_quiz_correct = 0
+    cumulative_quiz_total = 0
+    
+    for quiz_progress in all_quiz_progress:
+        if quiz_progress.stats:
+            try:
+                quiz_data = json.loads(quiz_progress.stats)
+                cumulative_quiz_correct += quiz_data.get('correct', 0)
+                cumulative_quiz_total += quiz_data.get('total', 0)
+            except json.JSONDecodeError:
+                continue
+    
+    cumulative_quiz_score = 0
+    if cumulative_quiz_total > 0:
+        cumulative_quiz_score = int((cumulative_quiz_correct / cumulative_quiz_total) * 100)
+    
+    # 연속 학습일 계산 (간단한 구현)
+    streak_days = 0
+    current_date = datetime.now()
+    for i in range(30):  # 최근 30일 확인
+        check_date = (current_date - timedelta(days=i)).strftime('%Y-%m-%d')
+        day_progress = db.query(UserProgress).filter(
+            UserProgress.session_id == session_id,
+            UserProgress.date == check_date
+        ).first()
+        
+        if day_progress and day_progress.learned_info:
+            try:
+                learned = json.loads(day_progress.learned_info)
+                if learned:  # 해당 날짜에 학습이 있으면
+                    streak_days += 1
+                else:
+                    break  # 학습이 없으면 연속 기록 중단
+            except json.JSONDecodeError:
+                break
+        else:
+            break
+    
+    return {
+        "today_ai_info": today_ai_info,
+        "today_terms": today_terms,
+        "today_quiz_score": today_quiz_score,
+        "today_quiz_correct": today_quiz_correct,
+        "today_quiz_total": today_quiz_total,
+        "total_learned": total_learned,
+        "total_terms_learned": total_terms_learned,
+        "cumulative_quiz_score": cumulative_quiz_score,
+        "cumulative_quiz_correct": cumulative_quiz_correct,
+        "cumulative_quiz_total": cumulative_quiz_total,
+        "streak_days": streak_days
     } 
