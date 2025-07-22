@@ -35,11 +35,11 @@ export default function AuthPage() {
     
     try {
       await authAPI.register({ username, password, role })
-      setError('')
-      alert('회원가입이 완료되었습니다. 로그인 해주세요!')
-      setTab('login')
-      setUsername('')
-      setPassword('')
+    setError('')
+    alert('회원가입이 완료되었습니다. 로그인 해주세요!')
+    setTab('login')
+    setUsername('')
+    setPassword('')
     } catch (error: any) {
       if (error.response?.data?.detail) {
         if (error.response.data.detail === 'Username already registered') {
@@ -63,12 +63,12 @@ export default function AuthPage() {
     
     try {
       const result = await authAPI.login({ username, password })
-      setError('')
+    setError('')
       
       if (result.user.role === 'admin') {
-        router.replace('/admin')
-      } else {
-        router.replace('/dashboard')
+      router.replace('/admin')
+    } else {
+      router.replace('/dashboard')
       }
     } catch (error: any) {
       if (error.response?.data?.detail) {

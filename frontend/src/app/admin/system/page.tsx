@@ -45,6 +45,47 @@ export default function SystemManagementPage() {
     enableAnalytics: true
   })
 
+  // 데이터베이스 관리 상태
+  const [dbStatus, setDbStatus] = useState<any>(null)
+  const [isInitializingDb, setIsInitializingDb] = useState(false)
+  const [dbError, setDbError] = useState('')
+  const [dbSuccess, setDbSuccess] = useState('')
+
+  // 데이터베이스 상태 확인
+  const loadDatabaseStatus = async () => {
+    try {
+      setDbError('')
+      const status = await systemAPI.getDatabaseStatus()
+      setDbStatus(status)
+    } catch (error: any) {
+      setDbError(error.response?.data?.detail || '데이터베이스 상태 확인 실패')
+    }
+  }
+
+  // 데이터베이스 초기화
+  const initializeDatabase = async () => {
+    if (!window.confirm('데이터베이스 테이블을 초기화하시겠습니까? 누락된 테이블이 생성됩니다.')) {
+      return
+    }
+
+    try {
+      setIsInitializingDb(true)
+      setDbError('')
+      setDbSuccess('')
+      
+      const result = await systemAPI.initDatabase()
+      setDbSuccess(`데이터베이스 초기화 완료! 총 ${result.total_tables}개 테이블 확인됨`)
+      
+      // 상태 새로고침
+      await loadDatabaseStatus()
+      
+    } catch (error: any) {
+      setDbError(error.response?.data?.detail || '데이터베이스 초기화 실패')
+    } finally {
+      setIsInitializingDb(false)
+    }
+  }
+
   // 데이터 로드
   const loadData = async () => {
     try {
@@ -83,6 +124,7 @@ export default function SystemManagementPage() {
 
   useEffect(() => {
     loadData()
+    loadDatabaseStatus()
   }, [])
 
   // 백업 생성
@@ -95,17 +137,17 @@ export default function SystemManagementPage() {
       await systemAPI.createBackup({
         description: description || undefined
       })
-      
+
       // 백업 히스토리 새로고침
       await loadData()
-      
+
       alert('백업이 성공적으로 생성되고 다운로드되었습니다!')
     } catch (error: any) {
       console.error('Backup failed:', error)
       if (error.response?.status === 403) {
         setError('관리자 권한이 필요합니다.')
       } else {
-        alert('백업 생성 중 오류가 발생했습니다.')
+      alert('백업 생성 중 오류가 발생했습니다.')
       }
     } finally {
       setIsBackingUp(false)
@@ -130,7 +172,7 @@ export default function SystemManagementPage() {
 
     setIsRestoring(true)
     
-    try {
+      try {
       const result = await systemAPI.restoreBackup(file)
       
       alert(`백업이 성공적으로 복원되었습니다!\n\n복원된 테이블: ${result.restored_tables.join(', ')}`)
@@ -140,11 +182,11 @@ export default function SystemManagementPage() {
       
       // 페이지 새로고침으로 세션 갱신
       setTimeout(() => {
-        window.location.reload()
+          window.location.reload()
       }, 1000)
       
     } catch (error: any) {
-      console.error('Restore failed:', error)
+        console.error('Restore failed:', error)
       if (error.response?.status === 403) {
         setError('관리자 권한이 필요합니다.')
       } else if (error.response?.status === 400) {
@@ -152,8 +194,8 @@ export default function SystemManagementPage() {
       } else {
         alert('백업 복원 중 오류가 발생했습니다.')
       }
-    } finally {
-      setIsRestoring(false)
+      } finally {
+        setIsRestoring(false)
       // 파일 input 리셋
       event.target.value = ''
     }
@@ -432,6 +474,96 @@ export default function SystemManagementPage() {
                 <FaSave className="w-4 h-4" />
                 설정 저장
               </button>
+            </div>
+          </div>
+        </div>
+
+        {/* 데이터베이스 관리 */}
+        <div className="mt-8 bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 p-6">
+          <h2 className="text-2xl font-bold mb-6 text-white flex items-center gap-3">
+            <FaDatabase className="text-blue-400" />
+            데이터베이스 관리
+          </h2>
+
+          {/* 오류/성공 메시지 */}
+          {dbError && (
+            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6">
+              <div className="flex items-center gap-3 text-red-400">
+                <FaExclamationTriangle />
+                <span>{dbError}</span>
+              </div>
+            </div>
+          )}
+
+          {dbSuccess && (
+            <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 mb-6">
+              <div className="flex items-center gap-3 text-green-400">
+                <FaCheckCircle />
+                <span>{dbSuccess}</span>
+              </div>
+            </div>
+          )}
+
+          {/* 데이터베이스 상태 */}
+          {dbStatus && (
+            <div className="bg-white/5 rounded-xl p-6 border border-white/10 mb-6">
+              <h3 className="text-lg font-bold text-white mb-4">데이터베이스 상태</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div className="bg-white/5 rounded-lg p-4">
+                  <div className="text-white/60 text-sm">연결 상태</div>
+                  <div className="text-white font-medium">{dbStatus.database_url}</div>
+                </div>
+                <div className="bg-white/5 rounded-lg p-4">
+                  <div className="text-white/60 text-sm">테이블 현황</div>
+                  <div className="text-white font-medium">{dbStatus.total_existing}/{dbStatus.total_expected} 테이블</div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <h4 className="text-white font-medium">테이블 상세:</h4>
+                {Object.entries(dbStatus.tables).map(([tableName, tableInfo]: [string, any]) => (
+                  <div key={tableName} className="flex items-center justify-between bg-white/5 rounded-lg p-3">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-3 h-3 rounded-full ${tableInfo.exists ? 'bg-green-400' : 'bg-red-400'}`} />
+                      <span className="text-white">{tableName}</span>
+                    </div>
+                    <span className="text-white/60 text-sm">
+                      {tableInfo.exists ? `${tableInfo.rows}행` : '없음'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 액션 버튼들 */}
+          <div className="flex flex-col sm:flex-row gap-4">
+            <button
+              onClick={loadDatabaseStatus}
+              className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-medium transition-all flex items-center justify-center gap-2"
+            >
+              <FaDatabase className="w-4 h-4" />
+              상태 새로고침
+            </button>
+
+            <button
+              onClick={initializeDatabase}
+              disabled={isInitializingDb}
+              className="px-6 py-3 bg-green-500 hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-medium transition-all flex items-center justify-center gap-2"
+            >
+              <FaSave className="w-4 h-4" />
+              {isInitializingDb ? '초기화 중...' : '테이블 초기화'}
+            </button>
+          </div>
+
+          <div className="mt-4 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
+            <div className="flex items-start gap-3 text-yellow-200">
+              <FaExclamationTriangle className="mt-1 flex-shrink-0" />
+              <div className="text-sm">
+                <strong>참고:</strong> 테이블 초기화는 누락된 테이블만 생성하며, 기존 데이터는 보존됩니다.
+                로그 관리에서 "activity_logs" 테이블 오류가 발생하면 이 기능을 사용하세요.
+              </div>
             </div>
           </div>
         </div>

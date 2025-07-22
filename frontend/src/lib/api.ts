@@ -216,6 +216,18 @@ export const systemAPI = {
     return response.data
   },
 
+  // 데이터베이스 테이블 초기화
+  initDatabase: async () => {
+    const response = await api.post('/api/system/init-database')
+    return response.data
+  },
+
+  // 데이터베이스 상태 확인
+  getDatabaseStatus: async () => {
+    const response = await api.get('/api/system/database-status')
+    return response.data
+  },
+
   // 실제 활동 로그 생성 (사용자 행동 추적용)
   logUserActivity: async (action: string, details?: string) => {
     try {

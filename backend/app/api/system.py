@@ -402,4 +402,144 @@ def clear_all_data(
         
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Failed to clear data: {str(e)}") 
+        raise HTTPException(status_code=500, detail=f"Failed to clear data: {str(e)}")
+
+@router.post("/init-database")
+async def init_database_tables(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """데이터베이스 테이블을 초기화하고 누락된 테이블을 생성합니다. (관리자만)"""
+    
+    if current_user.role != 'admin':
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions"
+        )
+    
+    try:
+        from ..database import Base, engine
+        from ..models import User, AIInfo, UserProgress, ActivityLog, BackupHistory, Quiz, Prompt, BaseContent, Term
+        
+        # 모든 테이블 생성 (이미 존재하는 테이블은 건드리지 않음)
+        Base.metadata.create_all(bind=engine)
+        
+        # 테이블 확인
+        from sqlalchemy import inspect, text
+        inspector = inspect(engine)
+        existing_tables = inspector.get_table_names()
+        
+        expected_tables = [
+            'users', 'ai_info', 'user_progress', 'activity_logs', 
+            'backup_history', 'quiz', 'prompt', 'base_content', 'term'
+        ]
+        
+        created_tables = []
+        missing_tables = []
+        
+        for table in expected_tables:
+            if table in existing_tables:
+                created_tables.append(table)
+            else:
+                missing_tables.append(table)
+        
+        # 활동 로그 테이블이 생성되었는지 다시 확인
+        with engine.connect() as conn:
+            try:
+                result = conn.execute(text("SELECT COUNT(*) FROM activity_logs"))
+                log_count = result.scalar()
+            except Exception:
+                # activity_logs 테이블이 없으면 강제로 생성
+                try:
+                    conn.execute(text("""
+                        CREATE TABLE IF NOT EXISTS activity_logs (
+                            id SERIAL PRIMARY KEY,
+                            user_id INTEGER,
+                            username VARCHAR,
+                            action VARCHAR NOT NULL,
+                            details TEXT,
+                            log_type VARCHAR DEFAULT 'user',
+                            log_level VARCHAR DEFAULT 'info',
+                            ip_address VARCHAR,
+                            user_agent TEXT,
+                            session_id VARCHAR,
+                            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+                        )
+                    """))
+                    conn.commit()
+                    log_count = 0
+                except Exception as create_error:
+                    raise HTTPException(
+                        status_code=500, 
+                        detail=f"Failed to create activity_logs table: {str(create_error)}"
+                    )
+        
+        # 초기화 로그 기록
+        log_activity(
+            db=db,
+            action="데이터베이스 테이블 초기화",
+            details=f"테이블 생성 완료. 기존 테이블: {len(created_tables)}개, 누락된 테이블: {len(missing_tables)}개",
+            log_type="system",
+            log_level="info",
+            user_id=current_user.id,
+            username=current_user.username
+        )
+        
+        return {
+            "message": "Database tables initialized successfully",
+            "existing_tables": created_tables,
+            "missing_tables": missing_tables,
+            "total_tables": len(created_tables)
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to initialize database: {str(e)}")
+
+@router.get("/database-status")
+async def get_database_status(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """데이터베이스 상태를 확인합니다. (관리자만)"""
+    
+    if current_user.role != 'admin':
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions"
+        )
+    
+    try:
+        from sqlalchemy import inspect, text
+        from ..database import engine
+        
+        inspector = inspect(engine)
+        existing_tables = inspector.get_table_names()
+        
+        expected_tables = [
+            'users', 'ai_info', 'user_progress', 'activity_logs', 
+            'backup_history', 'quiz', 'prompt', 'base_content', 'term'
+        ]
+        
+        table_status = {}
+        for table in expected_tables:
+            if table in existing_tables:
+                # 테이블 행 수 확인
+                try:
+                    with engine.connect() as conn:
+                        result = conn.execute(text(f"SELECT COUNT(*) FROM {table}"))
+                        count = result.scalar()
+                        table_status[table] = {"exists": True, "rows": count}
+                except Exception:
+                    table_status[table] = {"exists": True, "rows": "unknown"}
+            else:
+                table_status[table] = {"exists": False, "rows": 0}
+        
+        return {
+            "database_url": "Connected" if engine else "Not connected",
+            "tables": table_status,
+            "total_existing": len([t for t in expected_tables if t in existing_tables]),
+            "total_expected": len(expected_tables)
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to check database status: {str(e)}") 
