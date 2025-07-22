@@ -14,8 +14,7 @@ router = APIRouter()
 def create_log(
     request: Request,
     log_data: dict,
-    db: Session = Depends(get_db),
-    current_user: Optional[User] = None
+    db: Session = Depends(get_db)
 ):
     """활동 로그를 생성합니다."""
     try:
@@ -25,8 +24,8 @@ def create_log(
         
         # 로그 생성
         activity_log = ActivityLog(
-            user_id=current_user.id if current_user else None,
-            username=current_user.username if current_user else log_data.get('username'),
+            user_id=log_data.get('user_id'),
+            username=log_data.get('username'),
             action=log_data.get('action', ''),
             details=log_data.get('details', ''),
             log_type=log_data.get('log_type', 'user'),
