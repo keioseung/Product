@@ -35,7 +35,7 @@ def register_user(user_data: UserCreate, request: Request, db: Session = Depends
     db_user = User(
         username=user_data.username,
         email=user_data.email,
-        password_hash=hashed_password,
+        password=hashed_password,  # Supabase 필드명: password
         role=user_data.role
     )
     db.add(db_user)
@@ -61,18 +61,14 @@ def login_user(user_credentials: UserLogin, request: Request, db: Session = Depe
     """사용자 로그인"""
     # 사용자 확인
     user = db.query(User).filter(User.username == user_credentials.username).first()
-    if not user or not verify_password(user_credentials.password, user.password_hash):
+    if not user or not verify_password(user_credentials.password, user.password):  # Supabase 필드명: password
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    if not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Inactive user"
-        )
+    # is_active 필드는 Supabase 테이블에 없으므로 제거
     
     # 액세스 토큰 생성
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)

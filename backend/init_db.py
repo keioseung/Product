@@ -54,9 +54,8 @@ def init_database():
                 admin_user = User(
                     username="admin",
                     email="admin@example.com",
-                    password_hash=get_password_hash("admin123"),
-                    role="admin",
-                    is_active=True
+                    password=get_password_hash("admin123"),  # Supabase 필드명: password
+                    role="admin"
                 )
                 db.add(admin_user)
                 print("✅ 관리자 계정 생성 완료 (admin/admin123)")
@@ -70,9 +69,8 @@ def init_database():
                 test_user = User(
                     username="user",
                     email="user@example.com",
-                    password_hash=get_password_hash("user123"),
-                    role="user",
-                    is_active=True
+                    password=get_password_hash("user123"),  # Supabase 필드명: password
+                    role="user"
                 )
                 db.add(test_user)
                 print("✅ 테스트 사용자 계정 생성 완료 (user/user123)")

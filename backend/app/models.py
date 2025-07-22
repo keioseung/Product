@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean
+from sqlalchemy import Column, Integer, BigInteger, String, Text, DateTime, Boolean
 from sqlalchemy.sql import func
 from .database import Base
 
@@ -6,14 +6,12 @@ from .database import Base
 class User(Base):
     __tablename__ = "users"
     
-    id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True, index=True, nullable=False)
-    email = Column(String, unique=True, index=True, nullable=True)
-    password_hash = Column(String, nullable=False)
-    role = Column(String, default='user')  # 'user' or 'admin'
-    is_active = Column(Boolean, default=True)
+    id = Column(BigInteger, primary_key=True, index=True)  # Supabase는 bigint 사용
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    username = Column(Text, unique=True, index=True, nullable=False)  # text 타입
+    email = Column(Text, unique=True, index=True, nullable=True)  # text 타입
+    password = Column(Text, nullable=False)  # Supabase 필드명: password
+    role = Column(Text, default='user')  # text 타입, 'user' or 'admin'
 
 # 활동 로그 모델 추가
 class ActivityLog(Base):

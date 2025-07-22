@@ -69,7 +69,6 @@ def get_current_user(username: str = Depends(verify_token), db: Session = Depend
     return user
 
 def get_current_active_user(current_user: User = Depends(get_current_user)) -> User:
-    """활성화된 현재 사용자 정보 조회"""
-    if not current_user.is_active:
-        raise HTTPException(status_code=400, detail="Inactive user")
+    """현재 사용자 정보 조회"""
+    # Supabase 테이블에는 is_active 필드가 없으므로 체크 제거
     return current_user 

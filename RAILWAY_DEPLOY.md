@@ -7,8 +7,8 @@
 Railway 백엔드 서비스에서 다음 환경 변수를 **반드시** 설정하세요:
 
 ```bash
-# 데이터베이스 연결 (Railway PostgreSQL)
-DATABASE_URL=${{PostgreSQL.DATABASE_URL}}
+# 데이터베이스 연결 (Supabase PostgreSQL)
+DATABASE_URL=postgresql://postgres:[password]@[host]:[port]/postgres
 
 # JWT 시크릿 키 (보안상 중요!)
 SECRET_KEY=your-super-secret-jwt-key-change-this-in-production
@@ -32,12 +32,17 @@ NEXT_PUBLIC_API_BASE_URL=https://your-backend-domain.up.railway.app
 NODE_ENV=production
 ```
 
-### 3. Railway PostgreSQL 데이터베이스 추가
+### 3. Supabase 데이터베이스 연결
 
-1. Railway 대시보드에서 **"Add Service"** 클릭
-2. **"Database"** → **"PostgreSQL"** 선택
-3. 자동으로 `DATABASE_URL` 환경 변수가 생성됩니다
-4. 백엔드 서비스에서 이 변수를 참조: `${{PostgreSQL.DATABASE_URL}}`
+**Supabase를 사용하는 경우**:
+1. Supabase 대시보드에서 **Settings** → **Database** 클릭
+2. **Connection string** 복사 
+3. Railway 백엔드 환경 변수에서 `DATABASE_URL`에 해당 URL 설정
+
+**Supabase Connection String 형식**:
+```
+postgresql://postgres:[PASSWORD]@[HOST]:[PORT]/postgres
+```
 
 ### 4. 백엔드 시작 명령어
 
@@ -107,9 +112,10 @@ app.add_middleware(
 
 **원인**: DATABASE_URL이 잘못 설정됨
 **해결**:
-1. Railway PostgreSQL 서비스가 실행 중인지 확인
-2. `DATABASE_URL=${{PostgreSQL.DATABASE_URL}}` 형식으로 정확히 설정
-3. 백엔드 재배포
+1. Supabase 데이터베이스가 실행 중인지 확인
+2. Supabase **Settings** → **Database**에서 정확한 Connection string 복사
+3. `DATABASE_URL=postgresql://postgres:[PASSWORD]@[HOST]:[PORT]/postgres` 형식으로 정확히 설정
+4. 백엔드 재배포
 
 ### 4. 환경 변수 확인 명령어
 
