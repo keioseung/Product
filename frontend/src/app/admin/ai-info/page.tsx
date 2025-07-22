@@ -945,8 +945,13 @@ export default function AdminAIInfoPage() {
               {baseContents.length === 0 && <div className="text-white/50 text-center">등록된 기반 내용이 없습니다.</div>}
               {baseContents.map(b => (
                 <div key={b.id} className="bg-white/5 rounded-xl p-6 border border-white/10">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="font-bold text-lg text-white">{b.title}</div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="font-bold text-lg text-white">{b.title}</div>
+                      <div className="text-white/50 text-xs mt-1">
+                        생성일: {new Date(b.created_at).toLocaleDateString('ko-KR')}
+                      </div>
+                    </div>
                     <div className="flex gap-2">
                       <button 
                         onClick={() => handleBaseEdit(b)} 
@@ -963,10 +968,6 @@ export default function AdminAIInfoPage() {
                         삭제
                       </button>
                     </div>
-                  </div>
-                  <div className="text-white/70 text-sm whitespace-pre-line bg-white/5 rounded-lg p-4">{b.content}</div>
-                  <div className="text-white/50 text-xs mt-2">
-                    생성일: {new Date(b.created_at).toLocaleDateString('ko-KR')}
                   </div>
                 </div>
               ))}

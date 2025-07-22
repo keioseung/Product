@@ -224,8 +224,10 @@ export default function AdminPromptPage() {
           {baseContents.map(b => (
             <div key={b.id} className="bg-gradient-to-r from-pink-100 to-purple-100 rounded-2xl p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4 shadow">
               <div className="flex-1">
-                <div className="font-bold text-lg text-pink-900 mb-1">{b.title}</div>
-                <div className="text-gray-700 text-sm whitespace-pre-line">{b.content}</div>
+                <div className="font-bold text-lg text-pink-900">{b.title}</div>
+                <div className="text-gray-500 text-xs mt-1">
+                  생성일: {b.date}
+                </div>
               </div>
               <div className="flex gap-2 mt-2 md:mt-0">
                 <button onClick={() => handleBaseEdit(b)} className="px-4 py-2 bg-yellow-400 text-white rounded-xl font-bold hover:bg-yellow-500 transition">수정</button>
