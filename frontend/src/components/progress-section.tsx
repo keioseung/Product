@@ -448,7 +448,7 @@ function ProgressSection({ sessionId, selectedDate, onDateChange }: ProgressSect
                     최대: {maxAI}개
                   </span>
                 </div>
-                <div className="overflow-x-auto pt-28">
+                <div className="overflow-x-auto pt-16">
                   <div className="flex flex-row items-end h-32" style={{ minWidth: `${uniqueChartData.length * 40}px` }}>
                     {/* y축 라벨 */}
                     <div className="flex flex-col justify-between h-full mr-2 text-xs text-white/40 select-none" style={{height: 128}}>
@@ -511,7 +511,7 @@ function ProgressSection({ sessionId, selectedDate, onDateChange }: ProgressSect
                     최대: {maxTerms}개
                   </span>
                 </div>
-                <div className="overflow-x-auto pt-28">
+                <div className="overflow-x-auto pt-16">
                   <div className="flex flex-row items-end h-32" style={{ minWidth: `${uniqueChartData.length * 40}px` }}>
                     {/* y축 라벨 */}
                     <div className="flex flex-col justify-between h-full mr-2 text-xs text-white/40 select-none" style={{height: 128}}>
@@ -574,7 +574,7 @@ function ProgressSection({ sessionId, selectedDate, onDateChange }: ProgressSect
                     최대: {maxQuiz}%
                   </span>
                 </div>
-                <div className="overflow-x-auto pt-28">
+                <div className="overflow-x-auto pt-16">
                   <div className="flex flex-row items-end h-32" style={{ minWidth: `${uniqueChartData.length * 40}px` }}>
                     {/* y축 라벨 */}
                     <div className="flex flex-col justify-between h-full mr-2 text-xs text-white/40 select-none" style={{height: 128}}>
