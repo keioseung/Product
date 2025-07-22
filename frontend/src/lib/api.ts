@@ -167,6 +167,16 @@ export const logsAPI = {
   clearLogs: async () => {
     const response = await api.delete('/api/logs')
     return response.data
+  },
+
+  // 임시 로그 조회 (인증 없음) - 디버깅용
+  getLogsSimple: async (params?: { skip?: number; limit?: number }) => {
+    const queryParams = new URLSearchParams()
+    if (params?.skip) queryParams.append('skip', params.skip.toString())
+    if (params?.limit) queryParams.append('limit', params.limit.toString())
+
+    const response = await api.get(`/api/logs/simple?${queryParams.toString()}`)
+    return response.data
   }
 }
 

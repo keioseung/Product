@@ -34,6 +34,19 @@ async def health_check():
     except Exception as e:
         return {"status": "unhealthy", "database": "disconnected", "error": str(e), "timestamp": "2024-01-01T00:00:00Z"}
 
+@app.get("/debug/routes")
+async def debug_routes():
+    """등록된 모든 라우트를 확인하는 디버깅 엔드포인트"""
+    routes = []
+    for route in app.routes:
+        if hasattr(route, 'methods') and hasattr(route, 'path'):
+            routes.append({
+                "path": route.path,
+                "methods": list(route.methods),
+                "name": getattr(route, 'name', 'unknown')
+            })
+    return {"routes": routes, "total_routes": len(routes)}
+
 @app.options("/{path:path}")
 async def options_handler(path: str):
     """OPTIONS 요청을 명시적으로 처리"""

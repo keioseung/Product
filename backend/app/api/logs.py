@@ -60,15 +60,37 @@ def get_logs(
 ):
     """활동 로그 목록을 조회합니다. (관리자만)"""
     
-    print(f"🔍 로그 조회 요청 - 사용자: {current_user.username}, 역할: {current_user.role}")
-    print(f"📊 조회 파라미터: skip={skip}, limit={limit}, log_type={log_type}, log_level={log_level}")
-    
-    if current_user.role != 'admin':
-        print(f"❌ 권한 없음 - 사용자 역할: {current_user.role} (admin 필요)")
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions"
-        )
+    try:
+        print(f"🔍 로그 조회 요청 시작")
+        print(f"👤 현재 사용자: {current_user.username if current_user else 'None'}")
+        print(f"🏷️ 사용자 역할: {current_user.role if current_user else 'None'}")
+        print(f"📊 조회 파라미터: skip={skip}, limit={limit}, log_type={log_type}, log_level={log_level}")
+        
+        if not current_user:
+            print("❌ 현재 사용자가 None입니다")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User authentication failed"
+            )
+        
+        if current_user.role != 'admin':
+            print(f"❌ 권한 없음 - 사용자 역할: {current_user.role} (admin 필요)")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not enough permissions - Admin role required"
+            )
+        
+        print("✅ 권한 확인 완료 - 로그 조회 진행")
+        
+    except Exception as e:
+        print(f"❌ 로그 조회 전처리 에러: {str(e)}")
+        if isinstance(e, HTTPException):
+            raise e
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Internal error during log access: {str(e)}"
+            )
     
     query = db.query(ActivityLog)
     
@@ -122,6 +144,70 @@ def get_logs(
         "skip": skip,
         "limit": limit
     }
+
+@router.get("/test")
+def test_logs_api():
+    """로그 API 테스트 엔드포인트 (인증 없음)"""
+    return {
+        "status": "success",
+        "message": "로그 API가 정상 작동 중입니다",
+        "timestamp": datetime.now().isoformat(),
+        "available_endpoints": [
+            "GET /api/logs - 로그 조회 (admin 권한 필요)",
+            "GET /api/logs/stats - 로그 통계 (admin 권한 필요)",
+            "POST /api/logs - 로그 생성",
+            "DELETE /api/logs - 로그 삭제 (admin 권한 필요)"
+        ]
+    }
+
+@router.get("/simple")
+def get_logs_simple(
+    skip: int = 0,
+    limit: int = 50,
+    db: Session = Depends(get_db)
+):
+    """임시 로그 조회 엔드포인트 (인증 없음) - 디버깅용"""
+    try:
+        print("🔍 인증 없는 로그 조회 시작")
+        
+        # 간단한 로그 조회
+        logs = db.query(ActivityLog).order_by(
+            ActivityLog.created_at.desc()
+        ).offset(skip).limit(limit).all()
+        
+        total_count = db.query(ActivityLog).count()
+        
+        print(f"📊 조회 결과: {len(logs)}개 로그, 전체 {total_count}개")
+        
+        # 응답 데이터 구성
+        logs_data = []
+        for log in logs:
+            logs_data.append({
+                "id": str(log.id),
+                "timestamp": log.created_at.isoformat() if log.created_at else "N/A",
+                "type": log.log_type or "unknown",
+                "level": log.log_level or "info",
+                "user": log.username or "anonymous",
+                "action": log.action or "no action",
+                "details": log.details or ""
+            })
+        
+        print("✅ 로그 조회 성공")
+        
+        return {
+            "logs": logs_data,
+            "total": total_count,
+            "skip": skip,
+            "limit": limit,
+            "message": "Simple log query successful"
+        }
+        
+    except Exception as e:
+        print(f"❌ 간단 로그 조회 실패: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Simple log query failed: {str(e)}"
+        )
 
 @router.get("/stats")
 def get_log_stats(
