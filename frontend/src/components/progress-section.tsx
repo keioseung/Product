@@ -448,7 +448,7 @@ function ProgressSection({ sessionId, selectedDate, onDateChange }: ProgressSect
                     최대: {maxAI}개
                   </span>
                 </div>
-                <div className="overflow-x-auto pt-10">
+                <div className="overflow-x-auto pt-16">
                   <div className="flex flex-row items-end h-32" style={{ minWidth: `${uniqueChartData.length * 40}px` }}>
                     {/* y축 라벨 */}
                     <div className="flex flex-col justify-between h-full mr-2 text-xs text-white/40 select-none" style={{height: 128}}>
@@ -480,8 +480,12 @@ function ProgressSection({ sessionId, selectedDate, onDateChange }: ProgressSect
                               />
                               {/* bar 위에 % */}
                               {data.ai_info > 0 && (
-                                <div className="absolute -top-8 left-1/2 -translate-x-1/2 text-xs font-bold text-blue-200 drop-shadow bg-slate-900/80 rounded px-1 py-0.5 whitespace-nowrap z-10">
-                                  {percent === 100 ? '100%' : `${percent}%`}
+                                <div className={`absolute -top-12 left-1/2 -translate-x-1/2 text-xs font-bold whitespace-nowrap z-20 transition-all duration-300 ${
+                                  percent === 100 
+                                    ? 'bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 text-white shadow-2xl shadow-orange-500/50 animate-pulse px-2 py-1 rounded-full border-2 border-yellow-300' 
+                                    : 'bg-gradient-to-r from-blue-400 to-cyan-300 text-white shadow-lg shadow-blue-500/30 px-1.5 py-0.5 rounded-md'
+                                }`}>
+                                  {percent === 100 ? '🏆 100% 완료!' : `${percent}%`}
                                 </div>
                               )}
                             </div>
@@ -507,7 +511,7 @@ function ProgressSection({ sessionId, selectedDate, onDateChange }: ProgressSect
                     최대: {maxTerms}개
                   </span>
                 </div>
-                <div className="overflow-x-auto pt-10">
+                <div className="overflow-x-auto pt-16">
                   <div className="flex flex-row items-end h-32" style={{ minWidth: `${uniqueChartData.length * 40}px` }}>
                     {/* y축 라벨 */}
                     <div className="flex flex-col justify-between h-full mr-2 text-xs text-white/40 select-none" style={{height: 128}}>
@@ -539,8 +543,12 @@ function ProgressSection({ sessionId, selectedDate, onDateChange }: ProgressSect
                               />
                               {/* bar 위에 % */}
                               {data.terms > 0 && (
-                                <div className="absolute -top-8 left-1/2 -translate-x-1/2 text-xs font-bold text-pink-200 drop-shadow bg-slate-900/80 rounded px-1 py-0.5 whitespace-nowrap z-10">
-                                  {percent === 100 ? '100%' : `${percent}%`}
+                                <div className={`absolute -top-12 left-1/2 -translate-x-1/2 text-xs font-bold whitespace-nowrap z-20 transition-all duration-300 ${
+                                  percent === 100 
+                                    ? 'bg-gradient-to-r from-pink-400 via-purple-500 to-indigo-500 text-white shadow-2xl shadow-purple-500/50 animate-pulse px-2 py-1 rounded-full border-2 border-pink-300' 
+                                    : 'bg-gradient-to-r from-purple-400 to-pink-300 text-white shadow-lg shadow-purple-500/30 px-1.5 py-0.5 rounded-md'
+                                }`}>
+                                  {percent === 100 ? '🌟 100% 완료!' : `${percent}%`}
                                 </div>
                               )}
                             </div>
@@ -566,7 +574,7 @@ function ProgressSection({ sessionId, selectedDate, onDateChange }: ProgressSect
                     최대: {maxQuiz}%
                   </span>
                 </div>
-                <div className="overflow-x-auto pt-10">
+                <div className="overflow-x-auto pt-16">
                   <div className="flex flex-row items-end h-32" style={{ minWidth: `${uniqueChartData.length * 40}px` }}>
                     {/* y축 라벨 */}
                     <div className="flex flex-col justify-between h-full mr-2 text-xs text-white/40 select-none" style={{height: 128}}>
@@ -598,8 +606,12 @@ function ProgressSection({ sessionId, selectedDate, onDateChange }: ProgressSect
                               />
                               {/* bar 위에 % */}
                               {data.quiz_score > 0 && (
-                                <div className="absolute -top-8 left-1/2 -translate-x-1/2 text-xs font-bold text-green-200 drop-shadow bg-slate-900/80 rounded px-1 py-0.5 whitespace-nowrap z-10">
-                                  {percent === 100 ? '100%' : `${percent}%`}
+                                <div className={`absolute -top-12 left-1/2 -translate-x-1/2 text-xs font-bold whitespace-nowrap z-20 transition-all duration-300 ${
+                                  percent === 100 
+                                    ? 'bg-gradient-to-r from-emerald-400 via-green-500 to-teal-500 text-white shadow-2xl shadow-green-500/50 animate-pulse px-2 py-1 rounded-full border-2 border-emerald-300' 
+                                    : 'bg-gradient-to-r from-green-400 to-emerald-300 text-white shadow-lg shadow-green-500/30 px-1.5 py-0.5 rounded-md'
+                                }`}>
+                                  {percent === 100 ? '💯 100% 완료!' : `${percent}%`}
                                 </div>
                               )}
                             </div>
