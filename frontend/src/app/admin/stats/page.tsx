@@ -2,21 +2,15 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { FaChartBar, FaUsers, FaBrain, FaClipboard, FaBookOpen, FaComments, FaDatabase, FaArrowLeft, FaCalendar, FaTrophy, FaFire, FaEye } from 'react-icons/fa'
-
-interface UserProgress {
-  sessionId: string
-  date: string
-  learnedInfo: any
-  stats: any
-}
+import { FaChartBar, FaUsers, FaBrain, FaClipboard, FaBookOpen, FaComments, FaDatabase, FaArrowLeft, FaCalendar, FaTrophy, FaFire, FaEye, FaSpinner } from 'react-icons/fa'
+import { systemAPI } from '@/lib/api'
 
 interface DashboardStats {
   totalUsers: number
   activeUsers: number
   totalQuizzes: number
   totalContent: number
-  recentActivity: any[]
+  recentActivity: { user: string; action: string; time: string }[]
   popularTopics: { name: string; count: number }[]
   weeklyProgress: { day: string; users: number; quizzes: number }[]
 }
@@ -32,65 +26,33 @@ export default function AdminStatsPage() {
     popularTopics: [],
     weeklyProgress: []
   })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string>('')
 
   useEffect(() => {
     loadStats()
   }, [])
 
-  const loadStats = () => {
-    // 클라이언트 사이드에서만 실행
-    if (typeof window === 'undefined') return
-
-    // 사용자 데이터
-    const users = JSON.parse(localStorage.getItem('users') || '[]')
-    const userProgress = JSON.parse(localStorage.getItem('userProgress') || '[]')
+  const loadStats = async () => {
+    setLoading(true)
+    setError('')
     
-    // 컨텐츠 데이터
-    const quizzes = JSON.parse(localStorage.getItem('quizzes') || '[]')
-    const baseContents = JSON.parse(localStorage.getItem('baseContents') || '[]')
-    const aiInfos = JSON.parse(localStorage.getItem('aiInfos') || '[]')
-    const prompts = JSON.parse(localStorage.getItem('prompts') || '[]')
-
-    // 최근 7일간 활동한 사용자
-    const sevenDaysAgo = new Date()
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-    const activeUsers = userProgress.filter((progress: UserProgress) => 
-      new Date(progress.date) >= sevenDaysAgo
-    ).length
-
-    // 인기 토픽 (샘플 데이터)
-    const topics = ['AI 기초', '머신러닝', '딥러닝', '자연어처리', '컴퓨터비전']
-    const popularTopics = topics.map(topic => ({
-      name: topic,
-      count: Math.floor(Math.random() * 50) + 10
-    })).sort((a, b) => b.count - a.count)
-
-    // 주간 진행률 (샘플 데이터)
-    const weekDays = ['월', '화', '수', '목', '금', '토', '일']
-    const weeklyProgress = weekDays.map(day => ({
-      day,
-      users: Math.floor(Math.random() * 20) + 5,
-      quizzes: Math.floor(Math.random() * 30) + 10
-    }))
-
-    // 최근 활동 (샘플 데이터)
-    const recentActivity = [
-      { user: 'user123', action: 'AI 기초 퀴즈 완료', time: '5분 전' },
-      { user: 'admin', action: '새 컨텐츠 추가', time: '10분 전' },
-      { user: 'user456', action: '회원가입', time: '15분 전' },
-      { user: 'user789', action: '머신러닝 학습 완료', time: '20분 전' },
-      { user: 'user101', action: '딥러닝 퀴즈 시작', time: '25분 전' }
-    ]
-
-    setStats({
-      totalUsers: users.length,
-      activeUsers,
-      totalQuizzes: quizzes.length,
-      totalContent: baseContents.length + aiInfos.length + prompts.length,
-      recentActivity,
-      popularTopics,
-      weeklyProgress
-    })
+    try {
+      console.log('📊 관리자 통계 데이터 로딩 중...')
+      const response = await systemAPI.getAdminStats()
+      
+      if (response.success) {
+        console.log('✅ DB 연결 통계 데이터:', response.stats)
+        setStats(response.stats)
+      } else {
+        throw new Error('Failed to load admin stats')
+      }
+    } catch (err: any) {
+      console.error('❌ 관리자 통계 로딩 실패:', err)
+      setError(err.response?.data?.detail || err.message || '통계를 불러오는데 실패했습니다.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   // 간단한 프로그레스 바 컴포넌트
@@ -117,14 +79,42 @@ export default function AdminStatsPage() {
           >
             <FaArrowLeft className="w-5 h-5" />
           </button>
-          <div>
+          <div className="flex-1">
             <h1 className="text-3xl font-bold text-white flex items-center gap-3">
               <FaChartBar className="text-yellow-400" />
               사용자 통계 & 대시보드
+              {loading && <FaSpinner className="w-5 h-5 text-blue-400 animate-spin" />}
             </h1>
-            <p className="text-white/70 mt-1">전체 시스템 현황과 사용자 활동을 확인할 수 있습니다</p>
+            <p className="text-white/70 mt-1">
+              {loading ? '실시간 DB 데이터를 불러오는 중...' : '실시간 DB 연결 - 전체 시스템 현황과 사용자 활동'}
+            </p>
           </div>
+          <button
+            onClick={loadStats}
+            disabled={loading}
+            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white rounded-lg transition-all flex items-center gap-2"
+          >
+            {loading ? <FaSpinner className="w-4 h-4 animate-spin" /> : <FaDatabase className="w-4 h-4" />}
+            {loading ? '로딩 중...' : '새로고침'}
+          </button>
         </div>
+
+        {/* 에러 메시지 */}
+        {error && (
+          <div className="bg-red-500/20 border border-red-500/50 rounded-xl p-4 mb-8">
+            <div className="flex items-center gap-3">
+              <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse"></div>
+              <span className="text-red-200 font-medium">통계 로딩 실패</span>
+            </div>
+            <p className="text-red-300 mt-2 text-sm">{error}</p>
+            <button
+              onClick={loadStats}
+              className="mt-3 px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg transition-all"
+            >
+              다시 시도
+            </button>
+          </div>
+        )}
 
         {/* 메인 통계 카드 */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

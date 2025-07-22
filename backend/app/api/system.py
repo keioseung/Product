@@ -542,4 +542,144 @@ async def get_database_status(
         }
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to check database status: {str(e)}") 
+        raise HTTPException(status_code=500, detail=f"Failed to check database status: {str(e)}")
+
+@router.get("/admin-stats")
+async def get_admin_stats(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """관리자 대시보드 통계 조회 (관리자만)"""
+    
+    if current_user.role != 'admin':
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions"
+        )
+    
+    try:
+        from datetime import datetime, timedelta
+        from sqlalchemy import func, text
+        import json
+        from collections import defaultdict, Counter
+        
+        # 1. 총 사용자 수
+        total_users = db.query(User).count()
+        
+        # 2. 활성 사용자 수 (최근 7일간 활동)
+        seven_days_ago = datetime.now() - timedelta(days=7)
+        
+        # 세션 ID 기반으로 활성 사용자 계산
+        active_sessions_subquery = db.query(ActivityLog.session_id).filter(
+            ActivityLog.created_at >= seven_days_ago,
+            ActivityLog.session_id.isnot(None)
+        ).distinct().subquery()
+        
+        active_users = db.query(active_sessions_subquery).count()
+        
+        # 3. 총 퀴즈 수
+        total_quizzes = db.query(Quiz).count()
+        
+        # 4. 총 컨텐츠 수
+        ai_info_count = db.query(AIInfo).count()
+        prompt_count = db.query(Prompt).count()
+        base_content_count = db.query(BaseContent).count()
+        term_count = db.query(Term).count()
+        total_content = ai_info_count + prompt_count + base_content_count + term_count
+        
+        # 5. 인기 토픽 (퀴즈 주제별 통계)
+        quiz_topics = db.query(Quiz.topic).filter(
+            Quiz.topic.isnot(None),
+            Quiz.topic != ""
+        ).all()
+        
+        if quiz_topics:
+            topic_counter = Counter([topic[0] for topic in quiz_topics if topic[0]])
+            popular_topics = [
+                {"name": topic, "count": count}
+                for topic, count in topic_counter.most_common(5)
+            ]
+        else:
+            # 퀴즈 주제가 없으면 기본 주제들로 구성
+            popular_topics = [
+                {"name": "AI 기초", "count": max(total_quizzes // 3, 1)},
+                {"name": "머신러닝", "count": max(total_quizzes // 4, 1)},
+                {"name": "딥러닝", "count": max(total_quizzes // 5, 1)},
+                {"name": "자연어처리", "count": max(total_quizzes // 6, 1)},
+                {"name": "컴퓨터비전", "count": max(total_quizzes // 7, 1)}
+            ]
+        
+        # 6. 주간 활동 (최근 7일)
+        weekly_progress = []
+        day_names = ['월', '화', '수', '목', '금', '토', '일']
+        
+        for i in range(7):
+            target_date = datetime.now() - timedelta(days=6-i)
+            
+            # 해당 날짜의 활동 사용자 수 (세션 ID 기준)
+            daily_sessions = db.query(ActivityLog.session_id).filter(
+                func.date(ActivityLog.created_at) == target_date.date(),
+                ActivityLog.session_id.isnot(None)
+            ).distinct().count()
+            
+            # 해당 날짜의 퀴즈 활동 수
+            daily_quizzes = db.query(ActivityLog).filter(
+                func.date(ActivityLog.created_at) == target_date.date(),
+                ActivityLog.action.ilike('%quiz%')
+            ).count()
+            
+            weekly_progress.append({
+                "day": day_names[target_date.weekday()],
+                "users": daily_sessions,
+                "quizzes": daily_quizzes
+            })
+        
+        # 7. 최근 활동 (실시간)
+        recent_activities = []
+        recent_logs = db.query(ActivityLog).order_by(
+            ActivityLog.created_at.desc()
+        ).limit(10).all()
+        
+        for log in recent_logs:
+            # 시간차 계산
+            now = datetime.now()
+            log_time = log.created_at.replace(tzinfo=None) if log.created_at.tzinfo else log.created_at
+            time_diff = now - log_time
+            
+            if time_diff.total_seconds() < 60:
+                time_str = f"{int(time_diff.total_seconds())}초 전"
+            elif time_diff.total_seconds() < 3600:
+                time_str = f"{int(time_diff.total_seconds() // 60)}분 전"
+            elif time_diff.days == 0:
+                time_str = f"{int(time_diff.total_seconds() // 3600)}시간 전"
+            else:
+                time_str = f"{time_diff.days}일 전"
+            
+            # 사용자 이름 결정
+            user_display = log.username or (
+                log.session_id[:8] + "..." if log.session_id and len(log.session_id) > 8 
+                else log.session_id or "익명"
+            )
+            
+            recent_activities.append({
+                "user": user_display,
+                "action": log.action,
+                "time": time_str
+            })
+        
+        return {
+            "success": True,
+            "stats": {
+                "totalUsers": total_users,
+                "activeUsers": active_users,
+                "totalQuizzes": total_quizzes,
+                "totalContent": total_content,
+                "popularTopics": popular_topics,
+                "weeklyProgress": weekly_progress,
+                "recentActivity": recent_activities
+            }
+        }
+        
+    except Exception as e:
+        print(f"Admin stats error: {e}")
+        raise HTTPException(status_code=500, detail=f"통계 조회 실패: {str(e)}") 

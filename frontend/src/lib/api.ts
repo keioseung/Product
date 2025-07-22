@@ -228,6 +228,12 @@ export const systemAPI = {
     return response.data
   },
 
+  // 관리자 통계 조회
+  getAdminStats: async () => {
+    const response = await api.get('/api/system/admin-stats')
+    return response.data
+  },
+
   // 실제 활동 로그 생성 (사용자 행동 추적용)
   logUserActivity: async (action: string, details?: string) => {
     try {
