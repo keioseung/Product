@@ -947,7 +947,7 @@ export default function AdminAIInfoPage() {
                 <div key={b.id} className="bg-white/5 rounded-xl p-6 border border-white/10">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
-                      <div className="font-bold text-lg text-white">{b.title}</div>
+                    <div className="font-bold text-lg text-white">{b.title}</div>
                       <div className="text-white/50 text-xs mt-1">
                         생성일: {new Date(b.created_at).toLocaleDateString('ko-KR')}
                       </div>
