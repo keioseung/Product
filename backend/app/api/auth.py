@@ -35,8 +35,8 @@ def register_user(user_data: UserCreate, request: Request, db: Session = Depends
     db_user = User(
         username=user_data.username,
         email=user_data.email,
-        password=hashed_password,  # Supabase 필드명: password
-        role=user_data.role
+        hashed_password=hashed_password,
+        role=user_data.role or "user"
     )
     db.add(db_user)
     db.commit()
@@ -61,7 +61,7 @@ def login_user(user_credentials: UserLogin, request: Request, db: Session = Depe
     """사용자 로그인"""
     # 사용자 확인
     user = db.query(User).filter(User.username == user_credentials.username).first()
-    if not user or not verify_password(user_credentials.password, user.password):  # Supabase 필드명: password
+    if not user or not verify_password(user_credentials.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",

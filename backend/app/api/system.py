@@ -172,9 +172,7 @@ async def restore_backup(
             current_user_data = {
                 'id': current_user.id,
                 'username': current_user.username,
-                'password_hash': current_user.password_hash,
-                'role': current_user.role,
-                'is_active': current_user.is_active
+                'hashed_password': current_user.hashed_password
             }
             
             # 각 테이블 데이터 복원
@@ -368,9 +366,8 @@ def clear_all_data(
         # 현재 관리자 사용자 정보 백업
         admin_data = {
             'username': current_user.username,
-            'password_hash': current_user.password_hash,
-            'role': current_user.role,
-            'is_active': current_user.is_active
+            'hashed_password': current_user.hashed_password,
+            'role': current_user.role
         }
         
         # 모든 테이블 데이터 삭제

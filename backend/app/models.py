@@ -2,16 +2,16 @@ from sqlalchemy import Column, Integer, BigInteger, String, Text, DateTime, Bool
 from sqlalchemy.sql import func
 from .database import Base
 
-# 사용자 모델 추가
+# 사용자 모델 추가 (실제 Supabase 스키마에 맞춤)
 class User(Base):
     __tablename__ = "users"
     
-    id = Column(BigInteger, primary_key=True, index=True)  # Supabase는 bigint 사용
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    username = Column(Text, unique=True, index=True, nullable=False)  # text 타입
-    email = Column(Text, unique=True, index=True, nullable=True)  # text 타입
-    password = Column(Text, nullable=False)  # Supabase 필드명: password
-    role = Column(Text, default='user')  # text 타입, 'user' or 'admin'
+    id = Column(Integer, primary_key=True, index=True)  # 실제로는 integer
+    username = Column(String, unique=True, index=True, nullable=False)  # varchar
+    email = Column(String, unique=True, index=True, nullable=True)  # varchar
+    hashed_password = Column(String, nullable=False)  # 실제 필드명: hashed_password
+    role = Column(String, default="user", nullable=False)  # varchar
+    created_at = Column(DateTime(timezone=True), server_default=func.now())  # timestamptz
 
 # 활동 로그 모델 추가
 class ActivityLog(Base):

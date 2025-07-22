@@ -2,11 +2,11 @@ from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime
 
-# User Schemas
+# User Schemas (실제 Supabase 스키마에 맞춤)
 class UserBase(BaseModel):
     username: str
     email: Optional[str] = None
-    role: str = 'user'
+    role: Optional[str] = "user"
 
 class UserCreate(UserBase):
     password: str
@@ -17,7 +17,7 @@ class UserLogin(BaseModel):
 
 class UserResponse(UserBase):
     id: int
-    is_active: bool
+    role: str
     created_at: datetime
     
     class Config:
