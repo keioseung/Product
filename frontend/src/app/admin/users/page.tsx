@@ -108,7 +108,7 @@ export default function UserManagementPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
       {/* 배경 효과 */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(120,119,198,0.3),transparent_50%)]" />
-      
+
       <div className="relative z-10 p-4 sm:p-6 lg:p-8">
         {/* 헤더 */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8">
@@ -125,8 +125,8 @@ export default function UserManagementPage() {
                   <FaUsers className="text-xl text-white" />
                 </div>
                 <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-white via-purple-200 to-pink-200 bg-clip-text text-transparent">
-                  회원 관리
-                </h1>
+                회원 관리
+              </h1>
               </div>
               <p className="text-white/60">시스템 사용자를 관리하고 권한을 설정하세요</p>
             </div>
@@ -138,13 +138,13 @@ export default function UserManagementPage() {
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 relative">
               <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-white/50" />
-              <input
-                type="text"
+            <input
+              type="text"
                 placeholder="사용자명 또는 이메일로 검색..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-12 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all"
-              />
+            />
             </div>
           </div>
         </div>
@@ -168,7 +168,8 @@ export default function UserManagementPage() {
             </h2>
           </div>
           
-          <div className="overflow-x-auto">
+          {/* 데스크톱 테이블 뷰 */}
+          <div className="hidden lg:block overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-white/10">
@@ -237,13 +238,75 @@ export default function UserManagementPage() {
                 ))}
               </tbody>
             </table>
-            
-            {filteredUsers.length === 0 && (
-              <div className="text-center py-12 text-white/60">
-                검색 결과가 없습니다.
-              </div>
-            )}
           </div>
+
+          {/* 모바일 카드 뷰 */}
+          <div className="lg:hidden divide-y divide-white/10">
+            {filteredUsers.map((user) => (
+              <div key={user.id} className="p-4 hover:bg-white/5 transition-colors">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                      user.role === 'admin' 
+                        ? 'bg-gradient-to-r from-red-500 to-pink-500' 
+                        : 'bg-gradient-to-r from-blue-500 to-purple-500'
+                    }`}>
+                      {user.role === 'admin' ? <FaUserShield className="text-white" /> : <FaUser className="text-white" />}
+                    </div>
+                    <div>
+                      <div className="text-white font-medium text-lg">{user.username}</div>
+                      <div className="text-white/60 text-sm">ID: {user.id}</div>
+                      {user.email && (
+                        <div className="text-white/70 text-sm">{user.email}</div>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleDeleteUser(user)}
+                    className="w-8 h-8 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 rounded-lg flex items-center justify-center text-red-400 hover:text-red-300 transition-all"
+                  >
+                    <FaTrash className="text-xs" />
+                  </button>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div>
+                    <label className="text-white/60 text-xs font-medium">역할</label>
+                    <select
+                      value={user.role}
+                      onChange={(e) => handleRoleChange(user.id, e.target.value as 'admin' | 'user')}
+                      className="w-full mt-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                    >
+                      <option value="user">일반 사용자</option>
+                      <option value="admin">관리자</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-white/60 text-xs font-medium">상태</label>
+                    <div className="mt-1">
+                      <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
+                        user.is_active 
+                          ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
+                          : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                      }`}>
+                        {user.is_active ? '활성' : '비활성'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="text-white/60 text-sm">
+                  가입일: {new Date(user.created_at).toLocaleDateString('ko-KR')}
+                </div>
+              </div>
+            ))}
+          </div>
+            
+          {filteredUsers.length === 0 && (
+            <div className="text-center py-12 text-white/60">
+              검색 결과가 없습니다.
+            </div>
+          )}
         </div>
       </div>
 
@@ -253,7 +316,7 @@ export default function UserManagementPage() {
           <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20 max-w-md w-full">
             <div className="flex items-center gap-4 mb-4">
               <div className="w-12 h-12 bg-red-500/20 rounded-xl flex items-center justify-center">
-                <FaExclamationTriangle className="text-red-400 text-xl" />
+              <FaExclamationTriangle className="text-red-400 text-xl" />
               </div>
               <div>
                 <h3 className="text-xl font-bold text-white">사용자 삭제</h3>

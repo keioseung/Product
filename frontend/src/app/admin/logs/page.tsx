@@ -44,10 +44,13 @@ export default function LogsManagementPage() {
         limit: 100
       }
       
-      if (typeFilter !== 'all') params.log_type = typeFilter
-      if (levelFilter !== 'all') params.log_level = levelFilter
-      if (searchTerm) params.action = searchTerm
-      if (dateFilter) params.start_date = dateFilter
+      // 필터 값이 유효한 경우에만 추가
+      if (typeFilter && typeFilter !== 'all') params.log_type = typeFilter
+      if (levelFilter && levelFilter !== 'all') params.log_level = levelFilter
+      if (searchTerm && searchTerm.trim()) params.action = searchTerm.trim()
+      if (dateFilter && dateFilter.trim()) params.start_date = dateFilter.trim()
+      
+      console.log('Loading logs with params:', params) // 디버깅용
       
       // 로그 목록과 통계를 동시에 가져오기
       const [logsResponse, statsResponse] = await Promise.all([
@@ -55,18 +58,45 @@ export default function LogsManagementPage() {
         logsAPI.getLogStats()
       ])
       
+      console.log('Logs response:', logsResponse) // 디버깅용
+      console.log('Stats response:', statsResponse) // 디버깅용
+      
       setLogs(logsResponse.logs || [])
       setFilteredLogs(logsResponse.logs || [])
-      setStats(statsResponse)
+      setStats(statsResponse || {
+        total_logs: 0,
+        today_logs: 0,
+        by_level: { error: 0, warning: 0, info: 0, success: 0 },
+        by_type: { user: 0, system: 0, security: 0 }
+      })
       
     } catch (error: any) {
       console.error('Failed to load logs:', error)
+      
+      // 상세한 오류 메시지 설정
       if (error.response?.status === 403) {
         setError('관리자 권한이 필요합니다.')
         setTimeout(() => router.push('/admin'), 2000)
+      } else if (error.response?.status === 401) {
+        setError('로그인이 필요합니다.')
+        setTimeout(() => router.push('/auth'), 2000)
+      } else if (error.response?.data?.detail) {
+        setError(`로그 조회 실패: ${error.response.data.detail}`)
+      } else if (error.message) {
+        setError(`네트워크 오류: ${error.message}`)
       } else {
-        setError('로그를 불러오는데 실패했습니다.')
+        setError('로그를 불러오는데 실패했습니다. 네트워크 연결을 확인해주세요.')
       }
+      
+      // 기본값 설정
+      setLogs([])
+      setFilteredLogs([])
+      setStats({
+        total_logs: 0,
+        today_logs: 0,
+        by_level: { error: 0, warning: 0, info: 0, success: 0 },
+        by_type: { user: 0, system: 0, security: 0 }
+      })
     } finally {
       setIsLoading(false)
     }

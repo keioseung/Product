@@ -3,8 +3,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { FaBrain, FaArrowLeft, FaPlus, FaEdit, FaTrash, FaRobot, FaFileAlt, FaCopy, FaSave, FaTimes } from 'react-icons/fa'
-import { aiInfoAPI } from '@/lib/api'
+import { FaBrain, FaArrowLeft, FaPlus, FaEdit, FaTrash, FaRobot, FaFileAlt, FaCopy, FaSave, FaTimes, FaDownload, FaUpload } from 'react-icons/fa'
+import { aiInfoAPI, promptAPI, baseContentAPI } from '@/lib/api'
 
 interface TermItem {
   term: string
@@ -17,17 +17,20 @@ interface AIInfoItem {
   terms?: TermItem[]
 }
 
-interface Prompt {
-  id: string
+interface ServerPrompt {
+  id: number
   title: string
   content: string
+  category: string
+  created_at: string
 }
 
-interface BaseContent {
-  id: string
-  date: string
+interface ServerBaseContent {
+  id: number
   title: string
   content: string
+  category: string
+  created_at: string
 }
 
 export default function AdminAIInfoPage() {
@@ -40,47 +43,23 @@ export default function AdminAIInfoPage() {
   const [success, setSuccess] = useState('')
 
   // 프롬프트 관리 상태
-  const [prompts, setPrompts] = useState<Prompt[]>([])
   const [promptTitle, setPromptTitle] = useState('')
   const [promptContent, setPromptContent] = useState('')
-  const [promptEditId, setPromptEditId] = useState<string | null>(null)
+  const [promptEditId, setPromptEditId] = useState<number | null>(null)
 
   // 기반 내용 관리 상태
-  const [baseContents, setBaseContents] = useState<BaseContent[]>([])
   const [baseTitle, setBaseTitle] = useState('')
   const [baseContent, setBaseContent] = useState('')
-  const [baseEditId, setBaseEditId] = useState<string | null>(null)
+  const [baseEditId, setBaseEditId] = useState<number | null>(null)
 
   // 프롬프트+기반내용 합치기 상태
-  const [selectedPromptId, setSelectedPromptId] = useState<string | null>(null)
-  const [selectedBaseId, setSelectedBaseId] = useState<string | null>(null)
+  const [selectedPromptId, setSelectedPromptId] = useState<number | null>(null)
+  const [selectedBaseId, setSelectedBaseId] = useState<number | null>(null)
   const [copied, setCopied] = useState(false)
 
   // 전문용어 일괄 입력 상태
   const [bulkTermsText, setBulkTermsText] = useState('')
   const [showBulkInput, setShowBulkInput] = useState<number | null>(null)
-
-  // 프롬프트 데이터 로드
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const pData = localStorage.getItem('prompts')
-      if (pData) setPrompts(JSON.parse(pData))
-      const bData = localStorage.getItem('baseContents')
-      if (bData) setBaseContents(JSON.parse(bData))
-    }
-  }, [])
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('prompts', JSON.stringify(prompts))
-    }
-  }, [prompts])
-  
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('baseContents', JSON.stringify(baseContents))
-    }
-  }, [baseContents])
 
   // 서버에서 날짜별 AI 정보 목록 불러오기
   const { data: dates = [], refetch: refetchDates } = useQuery({
@@ -102,7 +81,25 @@ export default function AdminAIInfoPage() {
     enabled: !!date,
   })
 
-  // 등록/수정
+  // 서버에서 프롬프트 목록 불러오기
+  const { data: prompts = [], refetch: refetchPrompts } = useQuery({
+    queryKey: ['prompts'],
+    queryFn: async () => {
+      const res = await promptAPI.getAll()
+      return res.data as ServerPrompt[]
+    }
+  })
+
+  // 서버에서 기반 내용 목록 불러오기
+  const { data: baseContents = [], refetch: refetchBaseContents } = useQuery({
+    queryKey: ['baseContents'],
+    queryFn: async () => {
+      const res = await baseContentAPI.getAll()
+      return res.data as ServerBaseContent[]
+    }
+  })
+
+  // AI 정보 등록/수정
   const addOrUpdateMutation = useMutation({
     mutationFn: async () => {
       return aiInfoAPI.add({ date, infos: inputs })
@@ -124,7 +121,7 @@ export default function AdminAIInfoPage() {
     }
   })
 
-  // 삭제
+  // AI 정보 삭제
   const deleteMutation = useMutation({
     mutationFn: async (date: string) => {
       return aiInfoAPI.delete(date)
@@ -139,6 +136,76 @@ export default function AdminAIInfoPage() {
     },
     onError: () => {
       setError('삭제에 실패했습니다. 다시 시도해주세요.')
+    }
+  })
+
+  // 프롬프트 추가/수정
+  const promptMutation = useMutation({
+    mutationFn: async (data: { title: string; content: string; id?: number }) => {
+      if (data.id) {
+        return promptAPI.update(data.id, { title: data.title, content: data.content, category: 'default' })
+      } else {
+        return promptAPI.add({ title: data.title, content: data.content, category: 'default' })
+      }
+    },
+    onSuccess: () => {
+      refetchPrompts()
+      setPromptTitle('')
+      setPromptContent('')
+      setPromptEditId(null)
+      setSuccess('프롬프트가 저장되었습니다!')
+    },
+    onError: () => {
+      setError('프롬프트 저장에 실패했습니다.')
+    }
+  })
+
+  // 프롬프트 삭제
+  const promptDeleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return promptAPI.delete(id)
+    },
+    onSuccess: () => {
+      refetchPrompts()
+      setSuccess('프롬프트가 삭제되었습니다!')
+    },
+    onError: () => {
+      setError('프롬프트 삭제에 실패했습니다.')
+    }
+  })
+
+  // 기반 내용 추가/수정
+  const baseContentMutation = useMutation({
+    mutationFn: async (data: { title: string; content: string; id?: number }) => {
+      if (data.id) {
+        return baseContentAPI.update(data.id, { title: data.title, content: data.content, category: 'default' })
+      } else {
+        return baseContentAPI.add({ title: data.title, content: data.content, category: 'default' })
+      }
+    },
+    onSuccess: () => {
+      refetchBaseContents()
+      setBaseTitle('')
+      setBaseContent('')
+      setBaseEditId(null)
+      setSuccess('기반 내용이 저장되었습니다!')
+    },
+    onError: () => {
+      setError('기반 내용 저장에 실패했습니다.')
+    }
+  })
+
+  // 기반 내용 삭제
+  const baseContentDeleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return baseContentAPI.delete(id)
+    },
+    onSuccess: () => {
+      refetchBaseContents()
+      setSuccess('기반 내용이 삭제되었습니다!')
+    },
+    onError: () => {
+      setError('기반 내용 삭제에 실패했습니다.')
     }
   })
 
@@ -275,31 +342,28 @@ export default function AdminAIInfoPage() {
   const handlePromptSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!promptTitle || !promptContent) return
-    if (promptEditId) {
-      setPrompts(prompts.map(p => p.id === promptEditId ? { ...p, title: promptTitle, content: promptContent } : p))
-      setPromptEditId(null)
-    } else {
-      setPrompts([
-        ...prompts,
-        { id: Date.now().toString(), title: promptTitle, content: promptContent }
-      ])
-    }
-    setPromptTitle('')
-    setPromptContent('')
+    
+    promptMutation.mutate({
+      title: promptTitle,
+      content: promptContent,
+      id: promptEditId || undefined
+    })
   }
 
-  const handlePromptEdit = (p: Prompt) => {
+  const handlePromptEdit = (p: ServerPrompt) => {
     setPromptEditId(p.id)
     setPromptTitle(p.title)
     setPromptContent(p.content)
   }
 
-  const handlePromptDelete = (id: string) => {
-    setPrompts(prompts.filter(p => p.id !== id))
-    if (promptEditId === id) {
-      setPromptEditId(null)
-      setPromptTitle('')
-      setPromptContent('')
+  const handlePromptDelete = (id: number) => {
+    if (window.confirm('정말 삭제하시겠습니까?')) {
+      promptDeleteMutation.mutate(id)
+      if (promptEditId === id) {
+        setPromptEditId(null)
+        setPromptTitle('')
+        setPromptContent('')
+      }
     }
   }
 
@@ -307,31 +371,28 @@ export default function AdminAIInfoPage() {
   const handleBaseSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!baseTitle || !baseContent) return
-    if (baseEditId) {
-      setBaseContents(baseContents.map(b => b.id === baseEditId ? { ...b, title: baseTitle, content: baseContent, date: new Date().toISOString().slice(0,10) } : b))
-      setBaseEditId(null)
-    } else {
-      setBaseContents([
-        ...baseContents,
-        { id: Date.now().toString(), title: baseTitle, content: baseContent, date: new Date().toISOString().slice(0,10) }
-      ])
-    }
-    setBaseTitle('')
-    setBaseContent('')
+    
+    baseContentMutation.mutate({
+      title: baseTitle,
+      content: baseContent,
+      id: baseEditId || undefined
+    })
   }
 
-  const handleBaseEdit = (b: BaseContent) => {
+  const handleBaseEdit = (b: ServerBaseContent) => {
     setBaseEditId(b.id)
     setBaseTitle(b.title)
     setBaseContent(b.content)
   }
 
-  const handleBaseDelete = (id: string) => {
-    setBaseContents(baseContents.filter(b => b.id !== id))
-    if (baseEditId === id) {
-      setBaseEditId(null)
-      setBaseTitle('')
-      setBaseContent('')
+  const handleBaseDelete = (id: number) => {
+    if (window.confirm('정말 삭제하시겠습니까?')) {
+      baseContentDeleteMutation.mutate(id)
+      if (baseEditId === id) {
+        setBaseEditId(null)
+        setBaseTitle('')
+        setBaseContent('')
+      }
     }
   }
 
@@ -348,6 +409,87 @@ export default function AdminAIInfoPage() {
     setCopied(true)
     window.open('https://chat.openai.com/', '_blank')
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  // 데이터 백업/복원 함수들
+  const exportData = async () => {
+    try {
+      const [promptsRes, baseContentsRes] = await Promise.all([
+        promptAPI.getAll(),
+        baseContentAPI.getAll()
+      ])
+      
+      const data = {
+        prompts: promptsRes.data,
+        baseContents: baseContentsRes.data,
+        exportDate: new Date().toISOString(),
+        version: "2.0"
+      }
+      
+      const dataStr = JSON.stringify(data, null, 2)
+      const dataBlob = new Blob([dataStr], { type: 'application/json' })
+      
+      const link = document.createElement('a')
+      link.href = URL.createObjectURL(dataBlob)
+      link.download = `ai_info_backup_${new Date().toISOString().split('T')[0]}.json`
+      link.click()
+      
+      setSuccess('데이터가 백업되었습니다!')
+    } catch (error) {
+      setError('백업 중 오류가 발생했습니다.')
+    }
+  }
+
+  const importData = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = async (e) => {
+      try {
+        const data = JSON.parse(e.target?.result as string)
+        
+        if (data.prompts && data.baseContents) {
+          // 서버에 데이터 업로드
+          const promises = []
+          
+          // 프롬프트 업로드
+          for (const prompt of data.prompts) {
+            promises.push(promptAPI.add({
+              title: prompt.title,
+              content: prompt.content,
+              category: prompt.category || 'default'
+            }))
+          }
+          
+          // 기반 내용 업로드
+          for (const base of data.baseContents) {
+            promises.push(baseContentAPI.add({
+              title: base.title,
+              content: base.content,
+              category: base.category || 'default'
+            }))
+          }
+          
+          await Promise.all(promises)
+          
+          // 데이터 새로고침
+          refetchPrompts()
+          refetchBaseContents()
+          
+          setSuccess(`데이터가 복원되었습니다!\n프롬프트: ${data.prompts.length}개\n기반 내용: ${data.baseContents.length}개`)
+        } else {
+          setError('올바르지 않은 백업 파일입니다.')
+        }
+      } catch (error) {
+        setError('파일을 읽는 중 오류가 발생했습니다.')
+        console.error('Import error:', error)
+      }
+    }
+    reader.readAsText(file)
+    
+    // 파일 입력 초기화
+    event.target.value = ''
   }
 
   // 프롬프트+기반내용 합치기 영역 선택 기능
@@ -388,13 +530,31 @@ export default function AdminAIInfoPage() {
           <div>
             <h1 className="text-3xl font-bold text-white flex items-center gap-3">
               <FaBrain className="text-blue-400" />
-              AI 정보 관리
+              AI 정보 관리 (DB 저장)
             </h1>
-            <p className="text-white/70 mt-1">AI 정보, 프롬프트, 기반 내용을 관리할 수 있습니다</p>
+            <p className="text-white/70 mt-1">AI 정보, 프롬프트, 기반 내용을 데이터베이스에 저장하여 관리합니다</p>
           </div>
         </div>
 
         <div className="max-w-6xl mx-auto flex flex-col gap-8">
+          {/* 성공/오류 메시지 */}
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4">
+              <div className="flex items-center gap-3 text-red-400">
+                <FaTimes />
+                <span>{error}</span>
+              </div>
+            </div>
+          )}
+          {success && (
+            <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4">
+              <div className="flex items-center gap-3 text-green-400">
+                <FaSave />
+                <span>{success}</span>
+              </div>
+            </div>
+          )}
+
           {/* AI 정보 관리 */}
           <section className="bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 p-6">
             <h2 className="text-2xl font-bold mb-6 text-white flex items-center gap-2">
@@ -568,9 +728,6 @@ export default function AdminAIInfoPage() {
                 정보 추가
               </button>
               
-              {error && <div className="text-red-400 font-medium text-center bg-red-500/10 border border-red-500/30 rounded-lg p-3">{error}</div>}
-              {success && <div className="text-green-400 font-medium text-center bg-green-500/10 border border-green-500/30 rounded-lg p-3">{success}</div>}
-              
               <button 
                 type="submit" 
                 disabled={addOrUpdateMutation.isPending} 
@@ -631,10 +788,31 @@ export default function AdminAIInfoPage() {
 
           {/* 프롬프트 관리 */}
           <section className="bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 p-6">
-            <h2 className="text-2xl font-bold mb-6 text-white flex items-center gap-2">
-              <FaRobot className="text-pink-400" />
-              프롬프트 관리
-            </h2>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                <FaRobot className="text-pink-400" />
+                프롬프트 관리 (DB 저장)
+              </h2>
+              <div className="flex gap-2">
+                <button
+                  onClick={exportData}
+                  className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition flex items-center gap-2"
+                >
+                  <FaDownload className="w-4 h-4" />
+                  백업
+                </button>
+                <label className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition flex items-center gap-2 cursor-pointer">
+                  <FaUpload className="w-4 h-4" />
+                  복원
+                  <input
+                    type="file"
+                    accept=".json"
+                    onChange={importData}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+            </div>
             
             <form onSubmit={handlePromptSubmit} className="mb-8 bg-white/5 rounded-xl p-6 border border-white/10 flex flex-col gap-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -662,10 +840,11 @@ export default function AdminAIInfoPage() {
               <div className="flex gap-2">
                 <button 
                   type="submit" 
-                  className="px-6 py-2 bg-pink-500 hover:bg-pink-600 text-white rounded-lg font-medium transition flex items-center gap-2"
+                  disabled={promptMutation.isPending}
+                  className="px-6 py-2 bg-pink-500 hover:bg-pink-600 text-white rounded-lg font-medium transition flex items-center gap-2 disabled:opacity-50"
                 >
                   <FaSave className="w-4 h-4" />
-                  {promptEditId ? '수정' : '등록'}
+                  {promptMutation.isPending ? '저장 중...' : (promptEditId ? '수정' : '등록')}
                 </button>
                 {promptEditId && (
                   <button 
@@ -703,6 +882,9 @@ export default function AdminAIInfoPage() {
                     </div>
                   </div>
                   <div className="text-white/70 text-sm whitespace-pre-line bg-white/5 rounded-lg p-4">{p.content}</div>
+                  <div className="text-white/50 text-xs mt-2">
+                    생성일: {new Date(p.created_at).toLocaleDateString('ko-KR')}
+                  </div>
                 </div>
               ))}
             </div>
@@ -712,7 +894,7 @@ export default function AdminAIInfoPage() {
           <section className="bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 p-6">
             <h2 className="text-2xl font-bold mb-6 text-white flex items-center gap-2">
               <FaFileAlt className="text-green-400" />
-              기반 내용 관리
+              기반 내용 관리 (DB 저장)
             </h2>
             
             <form onSubmit={handleBaseSubmit} className="mb-8 bg-white/5 rounded-xl p-6 border border-white/10 flex flex-col gap-4">
@@ -741,10 +923,11 @@ export default function AdminAIInfoPage() {
               <div className="flex gap-2">
                 <button 
                   type="submit" 
-                  className="px-6 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition flex items-center gap-2"
+                  disabled={baseContentMutation.isPending}
+                  className="px-6 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition flex items-center gap-2 disabled:opacity-50"
                 >
                   <FaSave className="w-4 h-4" />
-                  {baseEditId ? '수정' : '등록'}
+                  {baseContentMutation.isPending ? '저장 중...' : (baseEditId ? '수정' : '등록')}
                 </button>
                 {baseEditId && (
                   <button 
@@ -762,7 +945,7 @@ export default function AdminAIInfoPage() {
               {baseContents.length === 0 && <div className="text-white/50 text-center">등록된 기반 내용이 없습니다.</div>}
               {baseContents.map(b => (
                 <div key={b.id} className="bg-white/5 rounded-xl p-6 border border-white/10">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between mb-4">
                     <div className="font-bold text-lg text-white">{b.title}</div>
                     <div className="flex gap-2">
                       <button 
@@ -780,6 +963,10 @@ export default function AdminAIInfoPage() {
                         삭제
                       </button>
                     </div>
+                  </div>
+                  <div className="text-white/70 text-sm whitespace-pre-line bg-white/5 rounded-lg p-4">{b.content}</div>
+                  <div className="text-white/50 text-xs mt-2">
+                    생성일: {new Date(b.created_at).toLocaleDateString('ko-KR')}
                   </div>
                 </div>
               ))}
@@ -801,7 +988,7 @@ export default function AdminAIInfoPage() {
                   <label className="font-semibold text-white/80">프롬프트 선택</label>
                   <select 
                     value={selectedPromptId || ''} 
-                    onChange={e => setSelectedPromptId(e.target.value)} 
+                    onChange={e => setSelectedPromptId(e.target.value ? Number(e.target.value) : null)} 
                     className="p-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
                   >
                     <option value="" className="bg-gray-800">프롬프트 선택</option>
@@ -813,7 +1000,7 @@ export default function AdminAIInfoPage() {
                   <label className="font-semibold text-white/80">기반 내용 선택 (선택사항)</label>
                   <select 
                     value={selectedBaseId || ''} 
-                    onChange={e => setSelectedBaseId(e.target.value)} 
+                    onChange={e => setSelectedBaseId(e.target.value ? Number(e.target.value) : null)} 
                     className="p-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
                   >
                     <option value="" className="bg-gray-800">기반 내용 선택(선택사항)</option>
