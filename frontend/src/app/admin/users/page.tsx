@@ -109,61 +109,61 @@ export default function UserManagementPage() {
       {/* 배경 효과 */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(120,119,198,0.3),transparent_50%)]" />
 
-      <div className="relative z-10 p-4 sm:p-6 lg:p-8">
-        {/* 헤더 */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8">
-          <div className="flex items-center gap-4 mb-4 sm:mb-0">
+      <div className="relative z-10 p-3 sm:p-6 lg:p-8">
+        {/* 헤더 - 모바일에서 컴팩트하게 */}
+        <div className="flex items-center justify-between mb-4 sm:mb-8">
+          <div className="flex items-center gap-2 sm:gap-4">
             <button
               onClick={() => router.push('/admin')}
-              className="w-12 h-12 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 transition-all duration-300"
+              className="w-8 h-8 sm:w-12 sm:h-12 bg-white/10 backdrop-blur-sm rounded-lg sm:rounded-xl flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 transition-all duration-300"
             >
-              <FaArrowLeft />
+              <FaArrowLeft className="text-sm sm:text-base" />
             </button>
             <div>
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
-                  <FaUsers className="text-xl text-white" />
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="w-6 h-6 sm:w-10 sm:h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg sm:rounded-xl flex items-center justify-center">
+                  <FaUsers className="text-sm sm:text-xl text-white" />
                 </div>
-                <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-white via-purple-200 to-pink-200 bg-clip-text text-transparent">
-                회원 관리
-              </h1>
+                <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-white via-purple-200 to-pink-200 bg-clip-text text-transparent">
+                  회원 관리
+                </h1>
               </div>
-              <p className="text-white/60">시스템 사용자를 관리하고 권한을 설정하세요</p>
+              <p className="text-xs sm:text-sm text-white/60 mt-1 hidden sm:block">시스템 사용자를 관리하고 권한을 설정하세요</p>
             </div>
           </div>
         </div>
 
-        {/* 검색 및 필터 */}
-        <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 mb-6 border border-white/20">
-          <div className="flex flex-col sm:flex-row gap-4">
+        {/* 검색 및 필터 - 모바일에서 패딩 축소 */}
+        <div className="bg-white/10 backdrop-blur-xl rounded-xl sm:rounded-2xl p-3 sm:p-6 mb-4 sm:mb-6 border border-white/20">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
             <div className="flex-1 relative">
-              <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-white/50" />
-            <input
-              type="text"
+              <FaSearch className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-white/50 text-sm sm:text-base" />
+              <input
+                type="text"
                 placeholder="사용자명 또는 이메일로 검색..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all"
-            />
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-8 sm:pl-12 pr-3 sm:pr-4 py-2 sm:py-3 bg-white/10 border border-white/20 rounded-lg sm:rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all text-sm sm:text-base"
+              />
             </div>
           </div>
         </div>
 
         {/* 오류 메시지 */}
         {error && (
-          <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6">
-            <div className="flex items-center gap-3 text-red-400">
-              <FaExclamationTriangle />
-              <span>{error}</span>
+          <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 sm:p-4 mb-4 sm:mb-6">
+            <div className="flex items-center gap-2 sm:gap-3 text-red-400">
+              <FaExclamationTriangle className="text-sm sm:text-base" />
+              <span className="text-sm sm:text-base">{error}</span>
             </div>
           </div>
         )}
 
         {/* 사용자 목록 */}
-        <div className="bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 overflow-hidden">
-          <div className="p-6 border-b border-white/10">
-            <h2 className="text-xl font-bold text-white flex items-center gap-3">
-              <FaUsers className="text-purple-400" />
+        <div className="bg-white/10 backdrop-blur-xl rounded-xl sm:rounded-2xl border border-white/20 overflow-hidden">
+          <div className="p-3 sm:p-6 border-b border-white/10">
+            <h2 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2 sm:gap-3">
+              <FaUsers className="text-purple-400 text-sm sm:text-base" />
               전체 사용자 ({filteredUsers.length}명)
             </h2>
           </div>
@@ -240,42 +240,42 @@ export default function UserManagementPage() {
             </table>
           </div>
 
-          {/* 모바일 카드 뷰 */}
+          {/* 모바일 카드 뷰 - 더 컴팩트하게 */}
           <div className="lg:hidden divide-y divide-white/10">
             {filteredUsers.map((user) => (
-              <div key={user.id} className="p-4 hover:bg-white/5 transition-colors">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+              <div key={user.id} className="p-3 sm:p-4 hover:bg-white/5 transition-colors">
+                <div className="flex items-start justify-between mb-2 sm:mb-3">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div className={`w-8 h-8 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl flex items-center justify-center ${
                       user.role === 'admin' 
                         ? 'bg-gradient-to-r from-red-500 to-pink-500' 
                         : 'bg-gradient-to-r from-blue-500 to-purple-500'
                     }`}>
-                      {user.role === 'admin' ? <FaUserShield className="text-white" /> : <FaUser className="text-white" />}
+                      {user.role === 'admin' ? <FaUserShield className="text-white text-xs sm:text-base" /> : <FaUser className="text-white text-xs sm:text-base" />}
                     </div>
                     <div>
-                      <div className="text-white font-medium text-lg">{user.username}</div>
-                      <div className="text-white/60 text-sm">ID: {user.id}</div>
+                      <div className="text-white font-medium text-sm sm:text-lg">{user.username}</div>
+                      <div className="text-white/60 text-xs sm:text-sm">ID: {user.id}</div>
                       {user.email && (
-                        <div className="text-white/70 text-sm">{user.email}</div>
+                        <div className="text-white/70 text-xs sm:text-sm">{user.email}</div>
                       )}
                     </div>
                   </div>
                   <button
                     onClick={() => handleDeleteUser(user)}
-                    className="w-8 h-8 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 rounded-lg flex items-center justify-center text-red-400 hover:text-red-300 transition-all"
+                    className="w-6 h-6 sm:w-8 sm:h-8 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 rounded-lg flex items-center justify-center text-red-400 hover:text-red-300 transition-all"
                   >
                     <FaTrash className="text-xs" />
                   </button>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-3 mb-3">
+                <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-2 sm:mb-3">
                   <div>
                     <label className="text-white/60 text-xs font-medium">역할</label>
                     <select
                       value={user.role}
                       onChange={(e) => handleRoleChange(user.id, e.target.value as 'admin' | 'user')}
-                      className="w-full mt-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                      className="w-full mt-1 bg-white/10 border border-white/20 rounded-lg px-2 sm:px-3 py-1 sm:py-2 text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50"
                     >
                       <option value="user">일반 사용자</option>
                       <option value="admin">관리자</option>
@@ -284,7 +284,7 @@ export default function UserManagementPage() {
                   <div>
                     <label className="text-white/60 text-xs font-medium">상태</label>
                     <div className="mt-1">
-                      <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
+                      <span className={`inline-block px-2 sm:px-3 py-1 rounded-full text-xs font-medium ${
                         user.is_active 
                           ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
                           : 'bg-red-500/20 text-red-400 border border-red-500/30'
@@ -295,7 +295,7 @@ export default function UserManagementPage() {
                   </div>
                 </div>
                 
-                <div className="text-white/60 text-sm">
+                <div className="text-white/60 text-xs sm:text-sm">
                   가입일: {new Date(user.created_at).toLocaleDateString('ko-KR')}
                 </div>
               </div>
@@ -303,7 +303,7 @@ export default function UserManagementPage() {
           </div>
             
           {filteredUsers.length === 0 && (
-            <div className="text-center py-12 text-white/60">
+            <div className="text-center py-8 sm:py-12 text-white/60 text-sm sm:text-base">
               검색 결과가 없습니다.
             </div>
           )}
