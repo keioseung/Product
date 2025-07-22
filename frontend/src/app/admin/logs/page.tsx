@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { FaDatabase, FaArrowLeft, FaSearch, FaFilter, FaDownload, FaTrash, FaUser, FaCog, FaExclamationTriangle, FaInfoCircle, FaCheckCircle, FaCalendar } from 'react-icons/fa'
+import { logsAPI } from '@/lib/api'
 
 interface LogEntry {
   id: string
@@ -23,102 +24,59 @@ export default function LogsManagementPage() {
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const [levelFilter, setLevelFilter] = useState<string>('all')
   const [dateFilter, setDateFilter] = useState<string>('')
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [stats, setStats] = useState({
+    total_logs: 0,
+    today_logs: 0,
+    by_level: { error: 0, warning: 0, info: 0, success: 0 },
+    by_type: { user: 0, system: 0, security: 0 }
+  })
 
-  // 로그 생성 함수
-  const createLog = (type: LogEntry['type'], level: LogEntry['level'], action: string, details: string, user?: string) => {
-    // 클라이언트 사이드에서만 실행
-    if (typeof window === 'undefined') return
-
-    const logEntry: LogEntry = {
-      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-      timestamp: new Date().toISOString(),
-      type,
-      level,
-      action,
-      details,
-      user,
-      ip: '127.0.0.1' // 실제 환경에서는 실제 IP를 가져와야 함
+  // 로그 및 통계 로드
+  const loadLogs = async () => {
+    try {
+      setIsLoading(true)
+      setError('')
+      
+      // 필터 파라미터 구성
+      const params: any = {
+        limit: 100
+      }
+      
+      if (typeFilter !== 'all') params.log_type = typeFilter
+      if (levelFilter !== 'all') params.log_level = levelFilter
+      if (searchTerm) params.action = searchTerm
+      if (dateFilter) params.start_date = dateFilter
+      
+      // 로그 목록과 통계를 동시에 가져오기
+      const [logsResponse, statsResponse] = await Promise.all([
+        logsAPI.getLogs(params),
+        logsAPI.getLogStats()
+      ])
+      
+      setLogs(logsResponse.logs || [])
+      setFilteredLogs(logsResponse.logs || [])
+      setStats(statsResponse)
+      
+    } catch (error: any) {
+      console.error('Failed to load logs:', error)
+      if (error.response?.status === 403) {
+        setError('관리자 권한이 필요합니다.')
+        setTimeout(() => router.push('/admin'), 2000)
+      } else {
+        setError('로그를 불러오는데 실패했습니다.')
+      }
+    } finally {
+      setIsLoading(false)
     }
-
-    const existingLogs = JSON.parse(localStorage.getItem('systemLogs') || '[]')
-    const newLogs = [logEntry, ...existingLogs].slice(0, 1000) // 최대 1000개 로그 유지
-    localStorage.setItem('systemLogs', JSON.stringify(newLogs))
-    
-    return logEntry
-  }
-
-  // 샘플 로그 생성
-  const generateSampleLogs = () => {
-    // 클라이언트 사이드에서만 실행
-    if (typeof window === 'undefined') return
-
-    const sampleLogs: Omit<LogEntry, 'id' | 'timestamp' | 'ip'>[] = [
-      { type: 'user', level: 'info', action: '로그인', details: '사용자가 로그인했습니다', user: 'admin' },
-      { type: 'user', level: 'info', action: '회원가입', details: '새 사용자가 등록되었습니다', user: 'user123' },
-      { type: 'system', level: 'success', action: '백업 생성', details: '시스템 백업이 성공적으로 생성되었습니다' },
-      { type: 'user', level: 'info', action: '퀴즈 완료', details: 'AI 기초 퀴즈를 완료했습니다', user: 'user123' },
-      { type: 'system', level: 'warning', action: '디스크 용량', details: '디스크 사용량이 80%를 초과했습니다' },
-      { type: 'security', level: 'warning', action: '로그인 실패', details: '잘못된 비밀번호로 로그인 시도', user: 'unknown' },
-      { type: 'error', level: 'error', action: 'API 오류', details: '외부 API 호출 중 타임아웃 발생' },
-      { type: 'user', level: 'info', action: '설정 변경', details: '사용자 프로필 정보를 수정했습니다', user: 'admin' },
-      { type: 'system', level: 'info', action: '서버 시작', details: '애플리케이션 서버가 시작되었습니다' },
-      { type: 'user', level: 'info', action: '로그아웃', details: '사용자가 로그아웃했습니다', user: 'user123' }
-    ]
-
-    const existingLogs = JSON.parse(localStorage.getItem('systemLogs') || '[]')
-    if (existingLogs.length === 0) {
-      const newLogs = sampleLogs.map((log, index) => ({
-        ...log,
-        id: Date.now().toString() + index,
-        timestamp: new Date(Date.now() - index * 60000).toISOString(), // 1분씩 차이
-        ip: `192.168.1.${100 + index}`
-      }))
-      localStorage.setItem('systemLogs', JSON.stringify(newLogs))
-    }
-  }
-
-  // 로그 로드
-  const loadLogs = () => {
-    // 클라이언트 사이드에서만 실행
-    if (typeof window === 'undefined') return
-
-    const savedLogs = JSON.parse(localStorage.getItem('systemLogs') || '[]')
-    setLogs(savedLogs)
-    setFilteredLogs(savedLogs)
   }
 
   useEffect(() => {
-    generateSampleLogs()
     loadLogs()
-  }, [])
+  }, [typeFilter, levelFilter, searchTerm, dateFilter])
 
-  // 필터링
-  useEffect(() => {
-    let filtered = logs
-
-    if (searchTerm) {
-      filtered = filtered.filter(log =>
-        log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        log.details.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (log.user && log.user.toLowerCase().includes(searchTerm.toLowerCase()))
-      )
-    }
-
-    if (typeFilter !== 'all') {
-      filtered = filtered.filter(log => log.type === typeFilter)
-    }
-
-    if (levelFilter !== 'all') {
-      filtered = filtered.filter(log => log.level === levelFilter)
-    }
-
-    if (dateFilter) {
-      const filterDate = new Date(dateFilter).toDateString()
-      filtered = filtered.filter(log => new Date(log.timestamp).toDateString() === filterDate)
-    }
-
-    setFilteredLogs(filtered)
-  }, [logs, searchTerm, typeFilter, levelFilter, dateFilter])
+  // 필터링은 백엔드에서 처리되므로 제거
 
   // 로그 내보내기
   const exportLogs = () => {
@@ -132,12 +90,17 @@ export default function LogsManagementPage() {
   }
 
   // 로그 삭제
-  const clearLogs = () => {
-    const confirm = window.confirm('모든 로그를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')
-    if (confirm) {
-      localStorage.removeItem('systemLogs')
-      setLogs([])
-      setFilteredLogs([])
+  const clearLogs = async () => {
+    const confirmClear = window.confirm('모든 로그를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')
+    if (confirmClear) {
+      try {
+        await logsAPI.clearLogs()
+        await loadLogs() // 목록 새로고침
+        alert('모든 로그가 삭제되었습니다.')
+      } catch (error: any) {
+        console.error('Failed to clear logs:', error)
+        setError('로그 삭제에 실패했습니다.')
+      }
     }
   }
 
@@ -262,29 +225,47 @@ export default function LogsManagementPage() {
           </div>
         </div>
 
+        {/* 오류 메시지 */}
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6">
+            <div className="flex items-center gap-3 text-red-400">
+              <FaExclamationTriangle />
+              <span>{error}</span>
+            </div>
+          </div>
+        )}
+
         {/* 통계 */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
           <div className="bg-white/10 backdrop-blur-xl rounded-xl p-4 border border-white/20">
-            <div className="text-2xl font-bold text-white">{logs.length}</div>
+            <div className="text-2xl font-bold text-white">{stats.total_logs}</div>
             <div className="text-white/70 text-sm">총 로그</div>
           </div>
           <div className="bg-white/10 backdrop-blur-xl rounded-xl p-4 border border-white/20">
-            <div className="text-2xl font-bold text-red-400">{logs.filter(l => l.level === 'error').length}</div>
+            <div className="text-2xl font-bold text-cyan-400">{stats.today_logs}</div>
+            <div className="text-white/70 text-sm">오늘 로그</div>
+          </div>
+          <div className="bg-white/10 backdrop-blur-xl rounded-xl p-4 border border-white/20">
+            <div className="text-2xl font-bold text-red-400">{stats.by_level.error}</div>
             <div className="text-white/70 text-sm">오류</div>
           </div>
           <div className="bg-white/10 backdrop-blur-xl rounded-xl p-4 border border-white/20">
-            <div className="text-2xl font-bold text-yellow-400">{logs.filter(l => l.level === 'warning').length}</div>
+            <div className="text-2xl font-bold text-yellow-400">{stats.by_level.warning}</div>
             <div className="text-white/70 text-sm">경고</div>
           </div>
           <div className="bg-white/10 backdrop-blur-xl rounded-xl p-4 border border-white/20">
-            <div className="text-2xl font-bold text-purple-400">{filteredLogs.length}</div>
-            <div className="text-white/70 text-sm">필터된 로그</div>
+            <div className="text-2xl font-bold text-purple-400">{stats.by_type.user}</div>
+            <div className="text-white/70 text-sm">사용자 활동</div>
           </div>
         </div>
 
         {/* 로그 목록 */}
         <div className="bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 overflow-hidden">
-          {filteredLogs.length === 0 ? (
+          {isLoading ? (
+            <div className="p-8 text-center text-white/70">
+              로그를 불러오는 중...
+            </div>
+          ) : filteredLogs.length === 0 ? (
             <div className="p-8 text-center text-white/70">
               {searchTerm || typeFilter !== 'all' || levelFilter !== 'all' || dateFilter 
                 ? '검색 조건에 맞는 로그가 없습니다.' 

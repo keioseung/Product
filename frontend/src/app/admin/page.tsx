@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { FaRobot, FaArrowRight, FaGlobe, FaCode, FaBrain, FaRocket, FaChartLine, FaTrophy, FaLightbulb, FaUsers, FaBookOpen, FaCalendar, FaClipboard, FaBullseye, FaCog, FaChartBar, FaComments, FaDatabase, FaStar } from 'react-icons/fa'
+import { FaRobot, FaArrowRight, FaGlobe, FaCode, FaBrain, FaRocket, FaChartLine, FaTrophy, FaLightbulb, FaUsers, FaCalendar, FaBullseye, FaCog, FaChartBar, FaComments, FaDatabase, FaStar } from 'react-icons/fa'
 
 const adminMenus = [
   { 
@@ -15,26 +15,7 @@ const adminMenus = [
     size: 'large',
     priority: 'high'
   },
-  { 
-    href: '/admin/quiz-management', 
-    label: '퀴즈 관리', 
-    icon: FaClipboard, 
-    desc: '퀴즈 생성, 수정, 삭제 및 토픽 관리', 
-    color: 'from-indigo-500 to-purple-500',
-    accent: 'indigo',
-    size: 'medium',
-    priority: 'high'
-  },
-  { 
-    href: '/admin/content-management', 
-    label: '컨텐츠 관리', 
-    icon: FaBookOpen, 
-    desc: '학습 자료 및 기반 컨텐츠 관리', 
-    color: 'from-green-500 to-emerald-500',
-    accent: 'green',
-    size: 'medium',
-    priority: 'medium'
-  },
+
   { 
     href: '/admin/users', 
     label: '회원 관리', 

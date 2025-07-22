@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { FaRobot, FaUser, FaLock, FaEye, FaEyeSlash, FaArrowRight, FaStar } from 'react-icons/fa'
 import { User } from '@/types'
+import { authAPI } from '@/lib/api'
 
 export default function AuthPage() {
   const [tab, setTab] = useState<'login' | 'register'>('login')
@@ -25,43 +26,60 @@ export default function AuthPage() {
   }, [])
 
   // 회원가입
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!username || !password) {
       setError('모든 필드를 입력하세요.')
       return
     }
-    const users: User[] = JSON.parse(localStorage.getItem('users') || '[]')
-    if (users.find(u => u.username === username)) {
-      setError('이미 존재하는 아이디입니다.')
-      return
+    
+    try {
+      await authAPI.register({ username, password, role })
+      setError('')
+      alert('회원가입이 완료되었습니다. 로그인 해주세요!')
+      setTab('login')
+      setUsername('')
+      setPassword('')
+    } catch (error: any) {
+      if (error.response?.data?.detail) {
+        if (error.response.data.detail === 'Username already registered') {
+          setError('이미 존재하는 아이디입니다.')
+        } else {
+          setError(error.response.data.detail)
+        }
+      } else {
+        setError('회원가입 중 오류가 발생했습니다.')
+      }
     }
-    users.push({ username, password, role })
-    localStorage.setItem('users', JSON.stringify(users))
-    setError('')
-    alert('회원가입이 완료되었습니다. 로그인 해주세요!')
-    setTab('login')
-    setUsername('')
-    setPassword('')
   }
 
   // 로그인
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    const users: User[] = JSON.parse(localStorage.getItem('users') || '[]')
-    const user = users.find(u => u.username === username && u.password === password)
-    if (!user) {
-      setError('아이디 또는 비밀번호가 올바르지 않습니다.')
+    if (!username || !password) {
+      setError('모든 필드를 입력하세요.')
       return
     }
-    localStorage.setItem('isAdminLoggedIn', user.role === 'admin' ? 'true' : 'false')
-    localStorage.setItem('currentUser', JSON.stringify(user))
-    localStorage.setItem('sessionId', user.username)
-    setError('')
-    if (user.role === 'admin') {
-      router.replace('/admin')
-    } else {
-      router.replace('/dashboard')
+    
+    try {
+      const result = await authAPI.login({ username, password })
+      setError('')
+      
+      if (result.user.role === 'admin') {
+        router.replace('/admin')
+      } else {
+        router.replace('/dashboard')
+      }
+    } catch (error: any) {
+      if (error.response?.data?.detail) {
+        if (error.response.data.detail === 'Incorrect username or password') {
+          setError('아이디 또는 비밀번호가 올바르지 않습니다.')
+        } else {
+          setError(error.response.data.detail)
+        }
+      } else {
+        setError('로그인 중 오류가 발생했습니다.')
+      }
     }
   }
 

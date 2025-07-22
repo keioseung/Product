@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any
 import json
@@ -6,6 +6,7 @@ import json
 from ..database import get_db
 from ..models import UserProgress
 from ..schemas import UserProgressCreate, UserProgressResponse
+from .logs import log_activity
 
 router = APIRouter()
 
@@ -35,7 +36,7 @@ def get_user_progress(session_id: str, db: Session = Depends(get_db)):
     return result
 
 @router.post("/{session_id}/{date}/{info_index}")
-def update_user_progress(session_id: str, date: str, info_index: int, db: Session = Depends(get_db)):
+def update_user_progress(session_id: str, date: str, info_index: int, request: Request, db: Session = Depends(get_db)):
     """사용자의 학습 진행상황을 업데이트하고 통계를 계산합니다."""
     progress = db.query(UserProgress).filter(
         UserProgress.session_id == session_id, 
@@ -62,10 +63,22 @@ def update_user_progress(session_id: str, date: str, info_index: int, db: Sessio
     # 통계 업데이트
     update_user_statistics(session_id, db)
     
+    # 학습 활동 로그 기록
+    log_activity(
+        db=db,
+        action="AI 정보 학습",
+        details=f"사용자가 {date} 날짜의 AI 정보 {info_index + 1}번을 학습했습니다.",
+        log_type="user",
+        log_level="info",
+        username=session_id,
+        session_id=session_id,
+        ip_address=request.client.host if request.client else None
+    )
+    
     return {"message": "Progress updated successfully", "achievement_gained": True}
 
 @router.post("/term-progress/{session_id}")
-def update_term_progress(session_id: str, term_data: dict, db: Session = Depends(get_db)):
+def update_term_progress(session_id: str, term_data: dict, request: Request, db: Session = Depends(get_db)):
     """용어 학습 진행상황을 업데이트합니다."""
     term = term_data.get('term', '')
     date = term_data.get('date', '')
@@ -95,6 +108,18 @@ def update_term_progress(session_id: str, term_data: dict, db: Session = Depends
     
     # 통계 업데이트
     update_user_statistics(session_id, db)
+    
+    # 용어 학습 활동 로그 기록
+    log_activity(
+        db=db,
+        action="용어 학습",
+        details=f"사용자가 '{term}' 용어를 학습했습니다. (날짜: {date}, 정보: {info_index + 1})",
+        log_type="user",
+        log_level="info",
+        username=session_id,
+        session_id=session_id,
+        ip_address=request.client.host if request.client else None
+    )
     
     return {"message": "Term progress updated successfully", "achievement_gained": True}
 
@@ -371,7 +396,7 @@ def update_user_stats(session_id: str, stats: Dict[str, Any], db: Session = Depe
     return {"message": "Stats updated successfully"}
 
 @router.post("/quiz-score/{session_id}")
-def update_quiz_score(session_id: str, score_data: dict, db: Session = Depends(get_db)):
+def update_quiz_score(session_id: str, score_data: dict, request: Request, db: Session = Depends(get_db)):
     """퀴즈 점수를 업데이트합니다."""
     score = score_data.get('score', 0)
     total_questions = score_data.get('total_questions', 1)
@@ -452,6 +477,18 @@ def update_quiz_score(session_id: str, score_data: dict, db: Session = Depends(g
     
     # 성취 확인
     check_achievements(session_id, db)
+    
+    # 퀴즈 완료 활동 로그 기록
+    log_activity(
+        db=db,
+        action="퀴즈 완료",
+        details=f"사용자가 퀴즈를 완료했습니다. 점수: {score}/{total_questions} ({quiz_score}%)",
+        log_type="user",
+        log_level="success" if quiz_score >= 80 else "info",
+        username=session_id,
+        session_id=session_id,
+        ip_address=request.client.host if request.client else None
+    )
     
     return {"message": "Quiz score updated successfully", "quiz_score": quiz_score}
 

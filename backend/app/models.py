@@ -1,6 +1,49 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime
+from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean
 from sqlalchemy.sql import func
 from .database import Base
+
+# 사용자 모델 추가
+class User(Base):
+    __tablename__ = "users"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, unique=True, index=True, nullable=False)
+    email = Column(String, unique=True, index=True, nullable=True)
+    password_hash = Column(String, nullable=False)
+    role = Column(String, default='user')  # 'user' or 'admin'
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+# 활동 로그 모델 추가
+class ActivityLog(Base):
+    __tablename__ = "activity_logs"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, nullable=True)  # 사용자 ID (로그인한 경우)
+    username = Column(String, nullable=True)  # 사용자명 (빠른 조회용)
+    action = Column(String, nullable=False)  # 액션 (로그인, 학습, 퀴즈 등)
+    details = Column(Text, nullable=True)  # 상세 내용
+    log_type = Column(String, default='user')  # 'user', 'system', 'security', 'error'
+    log_level = Column(String, default='info')  # 'info', 'warning', 'error', 'success'
+    ip_address = Column(String, nullable=True)  # IP 주소
+    user_agent = Column(Text, nullable=True)  # 사용자 에이전트
+    session_id = Column(String, nullable=True)  # 세션 ID
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+# 백업 히스토리 모델 추가
+class BackupHistory(Base):
+    __tablename__ = "backup_history"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    filename = Column(String, nullable=False)
+    file_size = Column(Integer, nullable=True)  # 파일 크기 (bytes)
+    backup_type = Column(String, default='manual')  # 'manual', 'auto'
+    tables_included = Column(Text, nullable=True)  # JSON 배열로 포함된 테이블 목록
+    description = Column(Text, nullable=True)
+    created_by = Column(Integer, nullable=True)  # 백업을 생성한 사용자 ID
+    created_by_username = Column(String, nullable=True)  # 사용자명 (빠른 조회용)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 class AIInfo(Base):
     __tablename__ = "ai_info"

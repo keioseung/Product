@@ -2,21 +2,39 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { FaCog, FaDownload, FaUpload, FaDatabase, FaTrash, FaArrowLeft, FaCheckCircle, FaExclamationTriangle, FaSave, FaPalette, FaGlobe } from 'react-icons/fa'
+import { FaCog, FaDownload, FaUpload, FaDatabase, FaTrash, FaArrowLeft, FaCheckCircle, FaExclamationTriangle, FaSave, FaPalette, FaGlobe, FaHistory } from 'react-icons/fa'
+import { systemAPI } from '@/lib/api'
 
-interface BackupData {
-  users: any[]
-  aiInfos: any[]
-  userProgress: any[]
-  settings: any
-  timestamp: string
+interface BackupHistoryItem {
+  id: number
+  filename: string
+  file_size: number
+  backup_type: string
+  description: string
+  created_by: string
+  created_at: string
+  tables_included: string[]
+}
+
+interface SystemInfo {
+  version: string
+  table_stats: Record<string, number>
+  total_records: number
+  latest_backup: {
+    filename: string
+    created_at: string
+    created_by: string
+  } | null
 }
 
 export default function SystemManagementPage() {
   const router = useRouter()
   const [isBackingUp, setIsBackingUp] = useState(false)
   const [isRestoring, setIsRestoring] = useState(false)
-  const [backupHistory, setBackupHistory] = useState<string[]>([])
+  const [backupHistory, setBackupHistory] = useState<BackupHistoryItem[]>([])
+  const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState('')
   const [settings, setSettings] = useState({
     theme: 'dark',
     language: 'ko',
@@ -27,129 +45,146 @@ export default function SystemManagementPage() {
     enableAnalytics: true
   })
 
-  useEffect(() => {
-    // 클라이언트 사이드에서만 실행
+  // 데이터 로드
+  const loadData = async () => {
+    try {
+      setIsLoading(true)
+      setError('')
+      
+      // 시스템 정보와 백업 히스토리를 동시에 가져오기
+      const [systemInfoResponse, backupHistoryResponse] = await Promise.all([
+        systemAPI.getSystemInfo(),
+        systemAPI.getBackupHistory()
+      ])
+      
+      setSystemInfo(systemInfoResponse)
+      setBackupHistory(backupHistoryResponse.backups || [])
+      
+    } catch (error: any) {
+      console.error('Failed to load system data:', error)
+      if (error.response?.status === 403) {
+        setError('관리자 권한이 필요합니다.')
+        setTimeout(() => router.push('/admin'), 2000)
+      } else {
+        setError('시스템 정보를 불러오는데 실패했습니다.')
+      }
+    } finally {
+      setIsLoading(false)
+    }
+    
+    // 로컬 설정 로드
     if (typeof window !== 'undefined') {
-      // 백업 히스토리 로드
-      const history = JSON.parse(localStorage.getItem('backupHistory') || '[]')
-      setBackupHistory(history)
-
-      // 설정 로드
       const savedSettings = localStorage.getItem('systemSettings')
       if (savedSettings) {
         setSettings(JSON.parse(savedSettings))
       }
     }
+  }
+
+  useEffect(() => {
+    loadData()
   }, [])
 
   // 백업 생성
-  const createBackup = () => {
+  const createBackup = async () => {
     setIsBackingUp(true)
     
     try {
-      const backupData: BackupData = {
-        users: JSON.parse(localStorage.getItem('users') || '[]'),
-        aiInfos: JSON.parse(localStorage.getItem('aiInfos') || '[]'),
-        userProgress: JSON.parse(localStorage.getItem('userProgress') || '[]'),
-        settings: JSON.parse(localStorage.getItem('systemSettings') || '{}'),
-        timestamp: new Date().toISOString()
-      }
-
-      const fileName = `ai_mastery_backup_${new Date().toISOString().split('T')[0]}_${Date.now()}.json`
-      const dataStr = JSON.stringify(backupData, null, 2)
-      const dataBlob = new Blob([dataStr], { type: 'application/json' })
+      const description = prompt('백업 설명을 입력하세요 (선택사항):')
       
-      const link = document.createElement('a')
-      link.href = URL.createObjectURL(dataBlob)
-      link.download = fileName
-      link.click()
-
-      // 백업 히스토리에 추가
-      const newHistory = [fileName, ...backupHistory.slice(0, settings.maxBackups - 1)]
-      setBackupHistory(newHistory)
-      localStorage.setItem('backupHistory', JSON.stringify(newHistory))
-
-      alert('백업이 성공적으로 생성되었습니다!')
-    } catch (error) {
+      await systemAPI.createBackup({
+        description: description || undefined
+      })
+      
+      // 백업 히스토리 새로고침
+      await loadData()
+      
+      alert('백업이 성공적으로 생성되고 다운로드되었습니다!')
+    } catch (error: any) {
       console.error('Backup failed:', error)
-      alert('백업 생성 중 오류가 발생했습니다.')
+      if (error.response?.status === 403) {
+        setError('관리자 권한이 필요합니다.')
+      } else {
+        alert('백업 생성 중 오류가 발생했습니다.')
+      }
     } finally {
       setIsBackingUp(false)
     }
   }
 
   // 백업 복원
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
 
-    setIsRestoring(true)
-    const reader = new FileReader()
-    
-    reader.onload = (e) => {
-      try {
-        const backupData = JSON.parse(e.target?.result as string)
-        
-        // 데이터 검증
-        if (!backupData.timestamp || !backupData.users) {
-          throw new Error('유효하지 않은 백업 파일입니다.')
-        }
-
-        const confirmRestore = window.confirm(
-          `백업 파일 (${new Date(backupData.timestamp).toLocaleString()})을 복원하시겠습니까?\n\n현재 데이터가 모두 덮어씌워집니다.`
-        )
-
-        if (confirmRestore) {
-          // 데이터 복원
-          localStorage.setItem('users', JSON.stringify(backupData.users || []))
-          localStorage.setItem('aiInfos', JSON.stringify(backupData.aiInfos || []))
-          localStorage.setItem('userProgress', JSON.stringify(backupData.userProgress || []))
-          if (backupData.settings) {
-            localStorage.setItem('systemSettings', JSON.stringify(backupData.settings))
-            setSettings(backupData.settings)
-          }
-
-          alert('백업이 성공적으로 복원되었습니다!')
-          window.location.reload()
-        }
-      } catch (error) {
-        console.error('Restore failed:', error)
-        alert('백업 복원 중 오류가 발생했습니다. 파일을 확인해주세요.')
-      } finally {
-        setIsRestoring(false)
-      }
+    if (!file.name.endsWith('.json')) {
+      alert('JSON 파일만 업로드할 수 있습니다.')
+      return
     }
 
-    reader.readAsText(file)
+    const confirmRestore = window.confirm(
+      `백업 파일 (${file.name})을 복원하시겠습니까?\n\n현재 모든 데이터가 백업 파일의 데이터로 덮어씌워집니다.\n\n이 작업은 되돌릴 수 없습니다!`
+    )
+
+    if (!confirmRestore) return
+
+    setIsRestoring(true)
+    
+    try {
+      const result = await systemAPI.restoreBackup(file)
+      
+      alert(`백업이 성공적으로 복원되었습니다!\n\n복원된 테이블: ${result.restored_tables.join(', ')}`)
+      
+      // 데이터 새로고침
+      await loadData()
+      
+      // 페이지 새로고침으로 세션 갱신
+      setTimeout(() => {
+        window.location.reload()
+      }, 1000)
+      
+    } catch (error: any) {
+      console.error('Restore failed:', error)
+      if (error.response?.status === 403) {
+        setError('관리자 권한이 필요합니다.')
+      } else if (error.response?.status === 400) {
+        alert('유효하지 않은 백업 파일입니다. 파일을 확인해주세요.')
+      } else {
+        alert('백업 복원 중 오류가 발생했습니다.')
+      }
+    } finally {
+      setIsRestoring(false)
+      // 파일 input 리셋
+      event.target.value = ''
+    }
   }
 
   // 모든 데이터 삭제
-  const clearAllData = () => {
+  const clearAllData = async () => {
     const confirmClear = window.confirm(
-      '모든 사용자 데이터를 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다!\n(관리자 계정은 유지됩니다)'
+      '모든 시스템 데이터를 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다!\n(현재 관리자 계정은 보존됩니다)'
     )
 
     if (confirmClear) {
-      const secondConfirm = window.confirm('정말로 모든 데이터를 삭제하시겠습니까?')
+      const secondConfirm = window.confirm('정말로 모든 데이터를 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다!')
       
       if (secondConfirm) {
-        // 현재 로그인한 관리자 계정만 유지
-        const currentUser = localStorage.getItem('currentUser')
-        const adminUser = currentUser ? JSON.parse(currentUser) : null
-        
-        localStorage.removeItem('users')
-        localStorage.removeItem('aiInfos')
-        localStorage.removeItem('userProgress')
-        localStorage.removeItem('backupHistory')
-        
-        // 관리자 계정 복원
-        if (adminUser && adminUser.role === 'admin') {
-          localStorage.setItem('users', JSON.stringify([adminUser]))
+        try {
+          await systemAPI.clearAllData()
+          
+          alert('모든 데이터가 삭제되었습니다.\n관리자 계정은 보존되었습니다.')
+          
+          // 데이터 새로고침
+          await loadData()
+          
+        } catch (error: any) {
+          console.error('Clear data failed:', error)
+          if (error.response?.status === 403) {
+            setError('관리자 권한이 필요합니다.')
+          } else {
+            alert('데이터 삭제 중 오류가 발생했습니다.')
+          }
         }
-
-        setBackupHistory([])
-        alert('모든 데이터가 삭제되었습니다.')
-        window.location.reload()
       }
     }
   }
