@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { FaBrain, FaArrowLeft, FaPlus, FaEdit, FaTrash, FaRobot, FaFileAlt, FaCopy, FaSave, FaTimes, FaDownload, FaUpload } from 'react-icons/fa'
 import { aiInfoAPI, promptAPI, baseContentAPI } from '@/lib/api'
+import { getKSTDateString, getKSTDateTimeString } from '@/lib/utils'
 
 interface TermItem {
   term: string
@@ -422,7 +423,7 @@ export default function AdminAIInfoPage() {
       const data = {
         prompts: promptsRes.data,
         baseContents: baseContentsRes.data,
-        exportDate: new Date().toISOString(),
+        exportDate: getKSTDateTimeString(),
         version: "2.0"
       }
       
@@ -431,7 +432,7 @@ export default function AdminAIInfoPage() {
       
       const link = document.createElement('a')
       link.href = URL.createObjectURL(dataBlob)
-      link.download = `ai_info_backup_${new Date().toISOString().split('T')[0]}.json`
+              link.download = `ai_info_backup_${getKSTDateString()}.json`
       link.click()
       
       setSuccess('데이터가 백업되었습니다!')

@@ -2,11 +2,13 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any
 import json
+from datetime import datetime, timedelta
 
 from ..database import get_db
 from ..models import UserProgress
 from ..schemas import UserProgressCreate, UserProgressResponse
 from .logs import log_activity
+from ..utils.kst_utils import get_kst_now, get_kst_date_string
 
 router = APIRouter()
 
@@ -162,14 +164,19 @@ def update_user_statistics(session_id: str, db: Session):
     learned_dates = []
     
     # AI 정보 학습 통계
+    print(f"Debug - update_user_statistics - AI 정보 학습 기록 수: {len(ai_progress)}")
     for p in ai_progress:
         if p.learned_info:
             try:
                 learned_data = json.loads(p.learned_info)
+                print(f"Debug - update_user_statistics - AI 정보 학습: {p.date} -> {learned_data} (개수: {len(learned_data)})")
                 total_learned += len(learned_data)
                 learned_dates.append(p.date)
             except json.JSONDecodeError:
+                print(f"Debug - update_user_statistics - AI 정보 JSON 파싱 에러: {p.learned_info}")
                 continue
+    
+    print(f"Debug - update_user_statistics - 누적 총 AI 정보 학습 수: {total_learned}")
     
     # 용어 학습 통계 - 중복 제거하여 정확한 개수 계산
     unique_terms = set()
@@ -252,9 +259,8 @@ def get_user_stats(session_id: str, db: Session = Depends(get_db)):
         UserProgress.date == '__stats__'
     ).first()
     
-    # 오늘 날짜
-    from datetime import datetime
-    today = datetime.now().strftime('%Y-%m-%d')
+    # 오늘 날짜 (KST)
+    today = get_kst_date_string()
     
     # 오늘 학습 데이터 가져오기
     today_ai_info = 0
@@ -383,13 +389,20 @@ def get_user_stats(session_id: str, db: Session = Depends(get_db)):
         ~UserProgress.date.like('__%')
     ).all()
     
+    print(f"Debug - 전체 AI 정보 학습 기록 수: {len(all_ai_progress_for_total)}")
+    print(f"Debug - Session ID: {session_id}")
+    
     for p in all_ai_progress_for_total:
         if p.learned_info:
             try:
                 learned_data = json.loads(p.learned_info)
+                print(f"Debug - AI 정보 학습 기록: {p.date} -> {learned_data} (개수: {len(learned_data)})")
                 total_learned += len(learned_data)
             except json.JSONDecodeError:
+                print(f"Debug - AI 정보 JSON 파싱 에러: {p.learned_info}")
                 continue
+    
+    print(f"Debug - 누적 총 AI 정보 학습 수: {total_learned}")
     
     if progress and progress.stats:
         stats = json.loads(progress.stats)
@@ -458,9 +471,8 @@ def update_quiz_score(session_id: str, score_data: dict, request: Request, db: S
     # 점수 계산 (백분율)
     quiz_score = int((score / total_questions) * 100) if total_questions > 0 else 0
     
-    # 오늘 날짜
-    from datetime import datetime
-    today = datetime.now().strftime('%Y-%m-%d')
+    # 오늘 날짜 (KST)
+    today = get_kst_date_string()
     
     # 오늘 퀴즈 세션 번호 찾기
     existing_quiz_sessions = db.query(UserProgress).filter(

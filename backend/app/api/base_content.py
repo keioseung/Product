@@ -5,6 +5,7 @@ from typing import List
 from ..database import get_db
 from ..models import BaseContent
 from ..schemas import BaseContentCreate, BaseContentResponse
+from ..utils.kst_utils import get_kst_now
 
 router = APIRouter()
 
@@ -25,7 +26,7 @@ def add_base_content(content_data: BaseContentCreate, db: Session = Depends(get_
         title=content_data.title,
         content=content_data.content,
         category=content_data.category,
-        created_at=datetime.now()
+        created_at=get_kst_now()
     )
     db.add(db_content)
     db.commit()

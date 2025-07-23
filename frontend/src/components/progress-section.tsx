@@ -6,6 +6,7 @@ import { BarChart3, TrendingUp, BookOpen, Target, Calendar, ChevronLeft, Chevron
 import { useUserStats } from '@/hooks/use-user-progress'
 import { userProgressAPI } from '@/lib/api'
 import { useQuery } from '@tanstack/react-query'
+import { getKSTDate, getKSTDateStringForPeriod } from '@/lib/utils'
 
 interface ProgressSectionProps {
   sessionId: string
@@ -52,8 +53,8 @@ function ProgressSection({ sessionId, selectedDate, onDateChange, onProgressUpda
 
   // 기간별 데이터 계산
   const getPeriodDates = () => {
-    const today = new Date()
-    const startDate = new Date()
+    const today = getKSTDate()
+    const startDate = new Date(today)
     
     switch (periodType) {
       case 'week':
@@ -369,6 +370,9 @@ function ProgressSection({ sessionId, selectedDate, onDateChange, onProgressUpda
                 {stats?.total_learned || 0}
               </span>
             </div>
+            {/* 디버깅용 로그 */}
+            {console.log('Progress Section - stats:', stats)}
+            {console.log('Progress Section - total_learned:', stats?.total_learned)}
           </div>
         </motion.div>
 

@@ -15,6 +15,7 @@ import { useRouter } from 'next/navigation'
 import { useFetchAINews } from '@/hooks/use-ai-info'
 import { useQueryClient } from '@tanstack/react-query'
 import { userProgressAPI } from '@/lib/api'
+import { getKSTDateString, getKSTDate, isToday } from '@/lib/utils'
 
 // 예시 용어 데이터
 const TERMS = [
@@ -72,10 +73,8 @@ function WeeklyBarGraph({ weeklyData }: { weeklyData: any[] }) {
 
 export default function DashboardPage() {
   const [selectedDate, setSelectedDate] = useState(() => {
-    // 한국 시간 기준으로 오늘 날짜 설정
-    const today = new Date()
-    const koreaTime = new Date(today.getTime() + (9 * 60 * 60 * 1000)) // UTC+9
-    return koreaTime.toISOString().split('T')[0]
+    // KST 기준으로 오늘 날짜 설정
+    return getKSTDateString()
   })
   const [sessionId] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -84,6 +83,7 @@ export default function DashboardPage() {
         id = Math.random().toString(36).substring(2, 15)
         localStorage.setItem('sessionId', id)
       }
+      console.log('🔍 Dashboard - Session ID:', id)
       return id
     }
     return 'default'
@@ -215,7 +215,7 @@ export default function DashboardPage() {
 
   // 주간 학습 데이터 - 실제 사용자 데이터 기반 (월~일 7일 모두)
   const getWeeklyDates = () => {
-    const today = new Date();
+    const today = getKSTDate();
     const dayOfWeek = today.getDay(); // 0: 일, 1: 월, ...
     // 이번주 월요일 구하기
     const monday = new Date(today);
@@ -374,7 +374,7 @@ export default function DashboardPage() {
               style={{ minWidth: 140, maxWidth: 180 }} 
             />
             <span className="px-2 md:px-3 py-1 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 text-white font-bold text-xs md:text-sm shadow">
-              {selectedDate === new Date().toISOString().split('T')[0] ? '오늘' : selectedDate}
+                              {isToday(selectedDate) ? '오늘' : selectedDate}
             </span>
           </div>
         </div>

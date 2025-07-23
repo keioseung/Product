@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { FaDatabase, FaArrowLeft, FaSearch, FaFilter, FaDownload, FaTrash, FaUser, FaCog, FaExclamationTriangle, FaInfoCircle, FaCheckCircle, FaCalendar } from 'react-icons/fa'
 import { logsAPI } from '@/lib/api'
+import { getKSTDateString } from '@/lib/utils'
 
 interface LogEntry {
   id: string
@@ -126,7 +127,7 @@ export default function LogsManagementPage() {
     
     const link = document.createElement('a')
     link.href = URL.createObjectURL(dataBlob)
-    link.download = `logs_export_${new Date().toISOString().split('T')[0]}.json`
+            link.download = `logs_export_${getKSTDateString()}.json`
     link.click()
   }
 

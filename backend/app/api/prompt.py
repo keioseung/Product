@@ -5,6 +5,7 @@ from typing import List
 from ..database import get_db
 from ..models import Prompt
 from ..schemas import PromptCreate, PromptResponse
+from ..utils.kst_utils import get_kst_now
 
 router = APIRouter()
 
@@ -21,7 +22,7 @@ def add_prompt(prompt_data: PromptCreate, db: Session = Depends(get_db)):
         title=prompt_data.title,
         content=prompt_data.content,
         category=prompt_data.category,
-        created_at=datetime.now()
+        created_at=get_kst_now()
     )
     db.add(db_prompt)
     db.commit()

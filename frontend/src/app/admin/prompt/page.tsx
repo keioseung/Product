@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { aiInfoAPI } from '@/lib/api'
+import { getKSTDateString } from '@/lib/utils'
 
 interface Prompt {
   id: string
@@ -78,12 +79,12 @@ export default function AdminPromptPage() {
     e.preventDefault()
     if (!baseTitle || !baseContent) return
     if (baseEditId) {
-      setBaseContents(baseContents.map(b => b.id === baseEditId ? { ...b, title: baseTitle, content: baseContent, date: new Date().toISOString().slice(0,10) } : b))
+              setBaseContents(baseContents.map(b => b.id === baseEditId ? { ...b, title: baseTitle, content: baseContent, date: getKSTDateString() } : b))
       setBaseEditId(null)
     } else {
       setBaseContents([
         ...baseContents,
-        { id: Date.now().toString(), title: baseTitle, content: baseContent, date: new Date().toISOString().slice(0,10) }
+        { id: Date.now().toString(), title: baseTitle, content: baseContent, date: getKSTDateString() }
       ])
     }
     setBaseTitle('')
