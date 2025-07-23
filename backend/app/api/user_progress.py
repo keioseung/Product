@@ -151,14 +151,17 @@ def update_user_statistics(session_id: str, db: Session):
             except json.JSONDecodeError:
                 continue
     
-    # 용어 학습 통계
+    # 용어 학습 통계 - 중복 제거하여 정확한 개수 계산
+    unique_terms = set()
     for p in terms_progress:
         if p.learned_info:
             try:
                 learned_data = json.loads(p.learned_info)
-                total_terms_learned += len(learned_data)
+                unique_terms.update(learned_data)  # 중복 제거
             except json.JSONDecodeError:
                 continue
+    
+    total_terms_learned = len(unique_terms)
     
     # 연속 학습일 계산
     streak_days = 0

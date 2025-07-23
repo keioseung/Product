@@ -167,13 +167,27 @@ export default function DashboardPage() {
     return []
   })()
   
-  // 백엔드 데이터와 로컬 데이터 통합
+  // 백엔드 데이터와 로컬 데이터 통합 - 올바른 방식으로 수정
   const backendProgress = userProgress?.[selectedDate] || []
-  const learnedAIInfo = Math.max(localProgress.length, backendProgress.length)
+  const localProgressSet = new Set(localProgress)
+  const backendProgressSet = new Set(backendProgress)
+  
+  // 두 데이터를 합쳐서 중복 제거
+  const combinedProgress = new Set([...localProgressSet, ...backendProgressSet])
+  const learnedAIInfo = combinedProgress.size
   const aiInfoProgress = totalAIInfo > 0 ? (learnedAIInfo / totalAIInfo) * 100 : 0
 
   const totalTerms = 60 // 3개 AI 정보 × 20개 용어씩
-  const learnedTerms = Array.isArray(userProgress?.total_terms_learned) ? userProgress.total_terms_learned.length : (userProgress?.total_terms_learned ?? 0)
+  // total_terms_learned가 숫자인지 배열인지 확인하여 올바르게 처리
+  const learnedTerms = (() => {
+    if (typeof userProgress?.total_terms_learned === 'number') {
+      return userProgress.total_terms_learned
+    }
+    if (Array.isArray(userProgress?.total_terms_learned)) {
+      return userProgress.total_terms_learned.length
+    }
+    return 0
+  })()
   const termsProgress = totalTerms > 0 ? (learnedTerms / totalTerms) * 100 : 0
 
   // 퀴즈 점수 계산 - 당일 푼 전체 문제수가 분모, 정답 맞춘 총 개수가 분자

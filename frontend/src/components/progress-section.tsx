@@ -356,6 +356,12 @@ function ProgressSection({ sessionId, selectedDate, onDateChange }: ProgressSect
                 {stats?.total_learned || 0}
               </span>
             </div>
+            <div className="flex justify-between items-center">
+              <span className="text-white/70 text-sm">오늘 학습 상태</span>
+              <span className="text-blue-400 font-bold text-sm">
+                {stats?.today_ai_info || 0}/3
+              </span>
+            </div>
           </div>
         </motion.div>
 
@@ -388,6 +394,12 @@ function ProgressSection({ sessionId, selectedDate, onDateChange }: ProgressSect
               <span className="text-white/70 text-sm">누적 총 학습 수</span>
               <span className="text-white font-semibold">
                 {stats?.total_terms_learned || 0}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-white/70 text-sm">오늘 학습 상태</span>
+              <span className="text-purple-400 font-bold text-sm">
+                {stats?.today_terms || 0}/60
               </span>
             </div>
           </div>
