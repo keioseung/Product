@@ -286,6 +286,7 @@ export default function DashboardPage() {
     queryClient.invalidateQueries({ queryKey: ['user-progress', sessionId] })
     queryClient.invalidateQueries({ queryKey: ['user-stats', sessionId] })
     queryClient.invalidateQueries({ queryKey: ['learned-terms', sessionId] })
+    queryClient.invalidateQueries({ queryKey: ['period-stats', sessionId] })
     setForceUpdate(prev => prev + 1) // 강제 리렌더링
   }
 

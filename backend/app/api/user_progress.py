@@ -20,6 +20,26 @@ def get_user_progress(session_id: str, db: Session = Depends(get_db)):
         if p.learned_info and not p.date.startswith('__'):
             result[p.date] = json.loads(p.learned_info)
     
+    # 용어 학습 기록 - 날짜별로 그룹핑
+    terms_by_date = {}
+    for p in progress:
+        if p.learned_info and p.date.startswith('__terms__'):
+            try:
+                # __terms__2024-01-01_0 형태에서 날짜 추출
+                date_part = p.date.replace('__terms__', '').split('_')[0]
+                if date_part not in terms_by_date:
+                    terms_by_date[date_part] = []
+                terms = json.loads(p.learned_info)
+                terms_by_date[date_part].extend(terms)
+            except (json.JSONDecodeError, IndexError):
+                continue
+    
+    # 날짜별로 중복 제거
+    for date in terms_by_date:
+        terms_by_date[date] = list(set(terms_by_date[date]))
+    
+    result['terms_by_date'] = terms_by_date
+    
     # 통계 정보 추가
     stats_progress = db.query(UserProgress).filter(
         UserProgress.session_id == session_id,
@@ -255,18 +275,22 @@ def get_user_stats(session_id: str, db: Session = Depends(get_db)):
         except json.JSONDecodeError:
             today_ai_info = 0
     
-    # 오늘 용어 학습 수
+    # 오늘 용어 학습 수 - 중복 제거하여 정확한 개수 계산
     today_terms_progress = db.query(UserProgress).filter(
         UserProgress.session_id == session_id,
         UserProgress.date.like(f'__terms__{today}%')
     ).all()
     
+    today_unique_terms = set()
     for term_progress in today_terms_progress:
         if term_progress.learned_info:
             try:
-                today_terms += len(json.loads(term_progress.learned_info))
+                terms = json.loads(term_progress.learned_info)
+                today_unique_terms.update(terms)  # 중복 제거
             except json.JSONDecodeError:
                 continue
+    
+    today_terms = len(today_unique_terms)
     
     # 오늘 퀴즈 점수 누적 계산
     today_quiz_correct = 0
@@ -328,8 +352,8 @@ def get_user_stats(session_id: str, db: Session = Depends(get_db)):
             except json.JSONDecodeError:
                 continue
     
-    # 총 용어 수 계산 (모든 날짜의 용어 수)
-    total_terms_available = 0
+    # 총 용어 수 계산 (모든 날짜의 용어 수) - 중복 제거하여 정확한 누적 총 학습 수 계산
+    unique_terms = set()
     all_terms_progress = db.query(UserProgress).filter(
         UserProgress.session_id == session_id,
         UserProgress.date.like('__terms__%')
@@ -339,13 +363,32 @@ def get_user_stats(session_id: str, db: Session = Depends(get_db)):
         if p.learned_info:
             try:
                 learned_data = json.loads(p.learned_info)
-                total_terms_available += len(learned_data)
+                unique_terms.update(learned_data)  # 중복 제거
+            except json.JSONDecodeError:
+                continue
+    
+    total_terms_available = len(unique_terms)
+    
+    # 전체 AI 정보 학습 수 계산 (누적 총 학습 수)
+    total_learned = 0
+    all_ai_progress_for_total = db.query(UserProgress).filter(
+        UserProgress.session_id == session_id,
+        ~UserProgress.date.like('__%')
+    ).all()
+    
+    for p in all_ai_progress_for_total:
+        if p.learned_info:
+            try:
+                learned_data = json.loads(p.learned_info)
+                total_learned += len(learned_data)
             except json.JSONDecodeError:
                 continue
     
     if progress and progress.stats:
         stats = json.loads(progress.stats)
         stats.update({
+            'total_learned': total_learned,  # 누적 총 학습 수 추가
+            'total_terms_learned': total_terms_available,  # 용어 학습 수도 업데이트
             'today_ai_info': today_ai_info,
             'today_terms': today_terms,
             'today_quiz_score': today_quiz_score,
@@ -360,7 +403,8 @@ def get_user_stats(session_id: str, db: Session = Depends(get_db)):
         return stats
     
     return {
-        'total_learned': 0,
+        'total_learned': total_learned,  # 계산된 누적 총 학습 수
+        'total_terms_learned': total_terms_available,  # 계산된 용어 학습 수
         'streak_days': 0,
         'last_learned_date': None,
         'quiz_score': 0,
