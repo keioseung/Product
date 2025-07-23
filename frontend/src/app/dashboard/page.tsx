@@ -72,10 +72,10 @@ function WeeklyBarGraph({ weeklyData }: { weeklyData: any[] }) {
 
 export default function DashboardPage() {
   const [selectedDate, setSelectedDate] = useState(() => {
+    // 한국 시간 기준으로 오늘 날짜 설정
     const today = new Date()
-    // KST 시간대로 날짜 가져오기 (UTC+9)
-    const kstDate = new Date(today.getTime() + (9 * 60 * 60 * 1000))
-    return kstDate.toISOString().split('T')[0]
+    const koreaTime = new Date(today.getTime() + (9 * 60 * 60 * 1000)) // UTC+9
+    return koreaTime.toISOString().split('T')[0]
   })
   const [sessionId] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -215,9 +215,7 @@ export default function DashboardPage() {
   };
   const weeklyDates = getWeeklyDates();
   const weeklyData = weeklyDates.map((dateObj, idx) => {
-    // KST 시간대로 날짜 가져오기 (UTC+9)
-    const kstDate = new Date(dateObj.getTime() + (9 * 60 * 60 * 1000))
-    const dateStr = kstDate.toISOString().split('T')[0];
+    const dateStr = dateObj.toISOString().split('T')[0];
     // AI 정보, 용어, 퀴즈 데이터 추출 (userProgress 기준)
     const ai = Array.isArray(userProgress?.[dateStr]) ? userProgress[dateStr].length : 0;
     const termsArr =
@@ -361,11 +359,7 @@ export default function DashboardPage() {
               style={{ minWidth: 140, maxWidth: 180 }} 
             />
             <span className="px-2 md:px-3 py-1 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 text-white font-bold text-xs md:text-sm shadow">
-              {selectedDate === (() => {
-              const today = new Date()
-              const kstDate = new Date(today.getTime() + (9 * 60 * 60 * 1000))
-              return kstDate.toISOString().split('T')[0]
-            })() ? '오늘' : selectedDate}
+              {selectedDate === new Date().toISOString().split('T')[0] ? '오늘' : selectedDate}
             </span>
           </div>
         </div>

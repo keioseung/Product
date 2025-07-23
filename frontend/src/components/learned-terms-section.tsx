@@ -26,10 +26,10 @@ interface LearnedTermsResponse {
 
 function LearnedTermsSection({ sessionId }: LearnedTermsSectionProps) {
   const [selectedDate, setSelectedDate] = useState<string | null>(() => {
+    // 한국 시간 기준으로 오늘 날짜 설정
     const today = new Date()
-    // KST 시간대로 날짜 가져오기 (UTC+9)
-    const kstDate = new Date(today.getTime() + (9 * 60 * 60 * 1000))
-    return kstDate.toISOString().split('T')[0]
+    const koreaTime = new Date(today.getTime() + (9 * 60 * 60 * 1000)) // UTC+9
+    return koreaTime.toISOString().split('T')[0]
   })
   const [currentTermIndex, setCurrentTermIndex] = useState(0)
   const [searchQuery, setSearchQuery] = useState('')
@@ -195,10 +195,7 @@ function LearnedTermsSection({ sessionId }: LearnedTermsSectionProps) {
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
     const link = document.createElement('a')
     link.href = URL.createObjectURL(blob)
-          // KST 시간대로 날짜 가져오기 (UTC+9)
-      const today = new Date()
-      const kstDate = new Date(today.getTime() + (9 * 60 * 60 * 1000))
-      link.download = `학습용어_${kstDate.toISOString().split('T')[0]}.csv`
+    link.download = `학습용어_${new Date().toISOString().split('T')[0]}.csv`
     link.click()
   }
 

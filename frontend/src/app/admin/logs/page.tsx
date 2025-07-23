@@ -126,10 +126,7 @@ export default function LogsManagementPage() {
     
     const link = document.createElement('a')
     link.href = URL.createObjectURL(dataBlob)
-          // KST 시간대로 날짜 가져오기 (UTC+9)
-      const today = new Date()
-      const kstDate = new Date(today.getTime() + (9 * 60 * 60 * 1000))
-      link.download = `logs_export_${kstDate.toISOString().split('T')[0]}.json`
+    link.download = `logs_export_${new Date().toISOString().split('T')[0]}.json`
     link.click()
   }
 

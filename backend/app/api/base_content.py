@@ -25,10 +25,7 @@ def add_base_content(content_data: BaseContentCreate, db: Session = Depends(get_
         title=content_data.title,
         content=content_data.content,
         category=content_data.category,
-        # KST 시간대로 생성 시간 설정
-        from datetime import timezone, timedelta
-        kst = timezone(timedelta(hours=9))
-        created_at=datetime.now(kst)
+        created_at=datetime.now()
     )
     db.add(db_content)
     db.commit()

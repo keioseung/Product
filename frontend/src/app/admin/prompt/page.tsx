@@ -78,18 +78,12 @@ export default function AdminPromptPage() {
     e.preventDefault()
     if (!baseTitle || !baseContent) return
     if (baseEditId) {
-              // KST 시간대로 날짜 가져오기 (UTC+9)
-        const today = new Date()
-        const kstDate = new Date(today.getTime() + (9 * 60 * 60 * 1000))
-        setBaseContents(baseContents.map(b => b.id === baseEditId ? { ...b, title: baseTitle, content: baseContent, date: kstDate.toISOString().slice(0,10) } : b))
+      setBaseContents(baseContents.map(b => b.id === baseEditId ? { ...b, title: baseTitle, content: baseContent, date: new Date().toISOString().slice(0,10) } : b))
       setBaseEditId(null)
     } else {
-      // KST 시간대로 날짜 가져오기 (UTC+9)
-      const today = new Date()
-      const kstDate = new Date(today.getTime() + (9 * 60 * 60 * 1000))
       setBaseContents([
         ...baseContents,
-        { id: Date.now().toString(), title: baseTitle, content: baseContent, date: kstDate.toISOString().slice(0,10) }
+        { id: Date.now().toString(), title: baseTitle, content: baseContent, date: new Date().toISOString().slice(0,10) }
       ])
     }
     setBaseTitle('')

@@ -36,10 +36,7 @@ async def create_backup(
         
         backup_data = {
             "backup_info": {
-                # KST 시간대로 생성 시간 설정
-        from datetime import timezone, timedelta
-        kst = timezone(timedelta(hours=9))
-        "created_at": datetime.now(kst).isoformat(),
+                "created_at": datetime.now().isoformat(),
                 "created_by": current_user.username,
                 "description": description or "Manual backup",
                 "tables_included": include_tables,
@@ -80,10 +77,7 @@ async def create_backup(
                 backup_data["data"][table_name] = table_data
         
         # 백업 파일명 생성
-        # KST 시간대로 타임스탬프 설정
-    from datetime import timezone, timedelta
-    kst = timezone(timedelta(hours=9))
-    timestamp = datetime.now(kst).strftime("%Y%m%d_%H%M%S")
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"ai_mastery_backup_{timestamp}.json"
         
         # JSON 문자열 생성
@@ -573,10 +567,7 @@ async def get_admin_stats(
         total_users = db.query(User).count()
         
         # 2. 활성 사용자 수 (최근 7일간 활동)
-        # KST 시간대로 7일 전 날짜 계산
-    from datetime import timezone, timedelta
-    kst = timezone(timedelta(hours=9))
-    seven_days_ago = datetime.now(kst) - timedelta(days=7)
+        seven_days_ago = datetime.now() - timedelta(days=7)
         
         # 세션 ID 기반으로 활성 사용자 계산
         active_sessions_subquery = db.query(ActivityLog.session_id).filter(
@@ -623,10 +614,7 @@ async def get_admin_stats(
         day_names = ['월', '화', '수', '목', '금', '토', '일']
         
         for i in range(7):
-            # KST 시간대로 목표 날짜 계산
-        from datetime import timezone, timedelta
-        kst = timezone(timedelta(hours=9))
-        target_date = datetime.now(kst) - timedelta(days=6-i)
+            target_date = datetime.now() - timedelta(days=6-i)
             
             # 해당 날짜의 활동 사용자 수 (세션 ID 기준)
             daily_sessions = db.query(ActivityLog.session_id).filter(
@@ -654,10 +642,7 @@ async def get_admin_stats(
         
         for log in recent_logs:
             # 시간차 계산
-            # KST 시간대로 현재 시간 설정
-    from datetime import timezone, timedelta
-    kst = timezone(timedelta(hours=9))
-    now = datetime.now(kst)
+            now = datetime.now()
             log_time = log.created_at.replace(tzinfo=None) if log.created_at.tzinfo else log.created_at
             time_diff = now - log_time
             
