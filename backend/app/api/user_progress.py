@@ -281,16 +281,23 @@ def get_user_stats(session_id: str, db: Session = Depends(get_db)):
         UserProgress.date.like(f'__terms__{today}%')
     ).all()
     
+    print(f"Debug - 오늘 용어 학습 기록 수: {len(today_terms_progress)}")
+    print(f"Debug - 오늘 날짜: {today}")
+    print(f"Debug - Session ID: {session_id}")
+    
     today_unique_terms = set()
     for term_progress in today_terms_progress:
         if term_progress.learned_info:
             try:
                 terms = json.loads(term_progress.learned_info)
+                print(f"Debug - 용어 학습 기록: {term_progress.date} -> {terms}")
                 today_unique_terms.update(terms)  # 중복 제거
             except json.JSONDecodeError:
+                print(f"Debug - JSON 파싱 에러: {term_progress.learned_info}")
                 continue
     
     today_terms = len(today_unique_terms)
+    print(f"Debug - 오늘 학습한 고유 용어 수: {today_terms}")
     
     # 오늘 퀴즈 점수 누적 계산
     today_quiz_correct = 0

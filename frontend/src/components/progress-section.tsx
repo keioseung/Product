@@ -11,6 +11,7 @@ interface ProgressSectionProps {
   sessionId: string
   selectedDate?: string
   onDateChange?: (date: string) => void
+  onProgressUpdate?: () => void
 }
 
 interface PeriodData {
@@ -29,13 +30,25 @@ interface PeriodStats {
   total_days: number
 }
 
-function ProgressSection({ sessionId, selectedDate, onDateChange }: ProgressSectionProps) {
+function ProgressSection({ sessionId, selectedDate, onDateChange, onProgressUpdate }: ProgressSectionProps) {
   // 외부에서 전달받은 selectedDate를 직접 사용
   const [periodType, setPeriodType] = useState<'week' | 'month' | 'custom'>('week')
   const [customStartDate, setCustomStartDate] = useState('')
   const [customEndDate, setCustomEndDate] = useState('')
 
-  const { data: stats } = useUserStats(sessionId)
+  const { data: stats, refetch: refetchStats } = useUserStats(sessionId)
+
+  // onProgressUpdate 콜백이 호출될 때 통계 새로고침
+  useEffect(() => {
+    if (onProgressUpdate) {
+      refetchStats()
+    }
+  }, [onProgressUpdate, refetchStats])
+
+  // 컴포넌트 마운트 시 통계 새로고침
+  useEffect(() => {
+    refetchStats()
+  }, [refetchStats])
 
   // 기간별 데이터 계산
   const getPeriodDates = () => {

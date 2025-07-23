@@ -476,6 +476,7 @@ export default function DashboardPage() {
                 sessionId={sessionId} 
                 selectedDate={selectedDate}
                 onDateChange={setSelectedDate}
+                onProgressUpdate={handleProgressUpdate}
               />
             </section>
           )}

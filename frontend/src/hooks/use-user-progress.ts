@@ -23,6 +23,9 @@ export function useUserStats(sessionId: string) {
       return response.data as UserStats
     },
     enabled: !!sessionId,
+    staleTime: 0, // 항상 최신 데이터를 가져오도록 설정
+    refetchOnWindowFocus: true, // 창 포커스 시 새로고침
+    refetchOnMount: true, // 컴포넌트 마운트 시 새로고침
   })
 }
 
