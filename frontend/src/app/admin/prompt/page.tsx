@@ -84,11 +84,11 @@ export default function AdminPromptPage() {
         setBaseContents(baseContents.map(b => b.id === baseEditId ? { ...b, title: baseTitle, content: baseContent, date: kstDate.toISOString().slice(0,10) } : b))
       setBaseEditId(null)
     } else {
+      // KST 시간대로 날짜 가져오기 (UTC+9)
+      const today = new Date()
+      const kstDate = new Date(today.getTime() + (9 * 60 * 60 * 1000))
       setBaseContents([
         ...baseContents,
-        // KST 시간대로 날짜 가져오기 (UTC+9)
-        const today = new Date()
-        const kstDate = new Date(today.getTime() + (9 * 60 * 60 * 1000))
         { id: Date.now().toString(), title: baseTitle, content: baseContent, date: kstDate.toISOString().slice(0,10) }
       ])
     }
