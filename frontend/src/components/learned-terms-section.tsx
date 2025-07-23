@@ -25,7 +25,12 @@ interface LearnedTermsResponse {
 }
 
 function LearnedTermsSection({ sessionId }: LearnedTermsSectionProps) {
-  const [selectedDate, setSelectedDate] = useState<string | null>(null)
+  const [selectedDate, setSelectedDate] = useState<string | null>(() => {
+    const today = new Date()
+    // KST 시간대로 날짜 가져오기 (UTC+9)
+    const kstDate = new Date(today.getTime() + (9 * 60 * 60 * 1000))
+    return kstDate.toISOString().split('T')[0]
+  })
   const [currentTermIndex, setCurrentTermIndex] = useState(0)
   const [searchQuery, setSearchQuery] = useState('')
   const [sortBy, setSortBy] = useState<'date' | 'length' | 'alphabet'>('date')
@@ -190,7 +195,10 @@ function LearnedTermsSection({ sessionId }: LearnedTermsSectionProps) {
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
     const link = document.createElement('a')
     link.href = URL.createObjectURL(blob)
-    link.download = `학습용어_${new Date().toISOString().split('T')[0]}.csv`
+          // KST 시간대로 날짜 가져오기 (UTC+9)
+      const today = new Date()
+      const kstDate = new Date(today.getTime() + (9 * 60 * 60 * 1000))
+      link.download = `학습용어_${kstDate.toISOString().split('T')[0]}.csv`
     link.click()
   }
 

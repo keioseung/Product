@@ -57,9 +57,12 @@ function ProgressSection({ sessionId, selectedDate, onDateChange }: ProgressSect
         break
     }
     
+    // KST 시간대로 날짜 가져오기 (UTC+9)
+    const kstStartDate = new Date(startDate.getTime() + (9 * 60 * 60 * 1000))
+    const kstToday = new Date(today.getTime() + (9 * 60 * 60 * 1000))
     return {
-      start: startDate.toISOString().split('T')[0],
-      end: today.toISOString().split('T')[0]
+      start: kstStartDate.toISOString().split('T')[0],
+      end: kstToday.toISOString().split('T')[0]
     }
   }
 
@@ -101,8 +104,11 @@ function ProgressSection({ sessionId, selectedDate, onDateChange }: ProgressSect
       const today = new Date()
       const weekAgo = new Date()
       weekAgo.setDate(today.getDate() - 6)
-      setCustomStartDate(weekAgo.toISOString().split('T')[0])
-      setCustomEndDate(today.toISOString().split('T')[0])
+      // KST 시간대로 날짜 가져오기 (UTC+9)
+      const kstWeekAgo = new Date(weekAgo.getTime() + (9 * 60 * 60 * 1000))
+      const kstToday = new Date(today.getTime() + (9 * 60 * 60 * 1000))
+      setCustomStartDate(kstWeekAgo.toISOString().split('T')[0])
+      setCustomEndDate(kstToday.toISOString().split('T')[0])
     }
   }
 
@@ -157,7 +163,11 @@ function ProgressSection({ sessionId, selectedDate, onDateChange }: ProgressSect
             <input
               id="progress-date"
               type="date"
-              value={selectedDate || new Date().toISOString().split('T')[0]}
+              value={selectedDate || (() => {
+                const today = new Date()
+                const kstDate = new Date(today.getTime() + (9 * 60 * 60 * 1000))
+                return kstDate.toISOString().split('T')[0]
+              })()}
               onChange={(e) => {
                 handleDateChange(e.target.value)
               }}
