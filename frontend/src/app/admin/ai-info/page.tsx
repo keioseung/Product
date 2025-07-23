@@ -419,10 +419,14 @@ export default function AdminAIInfoPage() {
         baseContentAPI.getAll()
       ])
       
+      // KST 시간대로 날짜 가져오기 (UTC+9)
+      const today = new Date()
+      const kstDate = new Date(today.getTime() + (9 * 60 * 60 * 1000))
+      
       const data = {
         prompts: promptsRes.data,
         baseContents: baseContentsRes.data,
-        exportDate: new Date().toISOString(),
+        exportDate: kstDate.toISOString(),
         version: "2.0"
       }
       
@@ -431,7 +435,10 @@ export default function AdminAIInfoPage() {
       
       const link = document.createElement('a')
       link.href = URL.createObjectURL(dataBlob)
-      link.download = `ai_info_backup_${new Date().toISOString().split('T')[0]}.json`
+      // KST 시간대로 날짜 가져오기 (UTC+9)
+      const backupToday = new Date()
+      const backupKstDate = new Date(backupToday.getTime() + (9 * 60 * 60 * 1000))
+      link.download = `ai_info_backup_${backupKstDate.toISOString().split('T')[0]}.json`
       link.click()
       
       setSuccess('데이터가 백업되었습니다!')

@@ -151,7 +151,10 @@ def test_logs_api():
     return {
         "status": "success",
         "message": "로그 API가 정상 작동 중입니다",
-        "timestamp": datetime.now().isoformat(),
+        # KST 시간대로 타임스탬프 설정
+        from datetime import timezone, timedelta
+        kst = timezone(timedelta(hours=9))
+        "timestamp": datetime.now(kst).isoformat(),
         "available_endpoints": [
             "GET /api/logs - 로그 조회 (admin 권한 필요)",
             "GET /api/logs/stats - 로그 통계 (admin 권한 필요)",
@@ -237,7 +240,10 @@ def get_log_stats(
     security_logs = db.query(ActivityLog).filter(ActivityLog.log_type == 'security').count()
     
     # 오늘 로그 수
-    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    # KST 시간대로 오늘 날짜 설정
+    from datetime import timezone, timedelta
+    kst = timezone(timedelta(hours=9))
+    today = datetime.now(kst).replace(hour=0, minute=0, second=0, microsecond=0)
     today_logs = db.query(ActivityLog).filter(ActivityLog.created_at >= today).count()
     
     return {
