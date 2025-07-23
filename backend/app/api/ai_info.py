@@ -2,10 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
 from typing import List
 import json
-import feedparser
+
 import re
 import html
-from deep_translator import GoogleTranslator
+
 
 from ..database import get_db
 from ..models import AIInfo
@@ -13,19 +13,7 @@ from ..schemas import AIInfoCreate, AIInfoResponse, AIInfoItem, TermItem
 
 router = APIRouter()
 
-def translate_to_ko(text):
-    try:
-        return GoogleTranslator(source='auto', target='ko').translate(text)
-    except Exception:
-        return text
 
-def clean_summary(summary, title):
-    text = re.sub(r'<[^>]+>', '', summary)
-    text = html.unescape(text)
-    text = text.replace('\xa0', ' ').replace('\n', ' ').strip()
-    if len(text) < 10 or text.replace(' ', '') in title.replace(' ', ''):
-        return None
-    return text
 
 def normalize_text(text):
     text = text.lower()
@@ -502,27 +490,7 @@ def get_learned_terms(session_id: str, db: Session = Depends(get_db)):
         print(f"Error in get_learned_terms: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to get learned terms: {str(e)}")
 
-@router.get("/news/fetch")
-def fetch_ai_news():
-    """AI 뉴스를 가져와서 번역하고 정리합니다."""
-    try:
-        feed = feedparser.parse('https://feeds.feedburner.com/TechCrunch/')
-        news_items = []
-        
-        for entry in feed.entries[:10]:
-            title = translate_to_ko(entry.title)
-            summary = clean_summary(entry.summary, title)
-            
-            if summary and len(summary) > 50:
-                news_items.append({
-                    "title": title,
-                    "content": summary,
-                    "link": entry.link
-                })
-        
-        return {"news": news_items[:3]}  # 상위 3개만 반환
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to fetch news: {str(e)}") 
+ 
 
 @router.options("/")
 def options_ai_info():

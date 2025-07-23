@@ -12,7 +12,7 @@ import LearnedTermsSection from '@/components/learned-terms-section'
 import useAIInfo from '@/hooks/use-ai-info'
 import useUserProgress, { useUserStats } from '@/hooks/use-user-progress'
 import { useRouter } from 'next/navigation'
-import { useFetchAINews } from '@/hooks/use-ai-info'
+
 import { useQueryClient } from '@tanstack/react-query'
 import { userProgressAPI } from '@/lib/api'
 import { getKSTDateString, getKSTDate, isToday } from '@/lib/utils'
@@ -93,8 +93,7 @@ export default function DashboardPage() {
   const { data: userStats } = useUserStats(sessionId)
   const router = useRouter()
   const queryClient = useQueryClient()
-  const [activeTab, setActiveTab] = useState<'ai' | 'quiz' | 'progress' | 'news' | 'term'>('ai')
-  const { data: news, isLoading: newsLoading } = useFetchAINews()
+  const [activeTab, setActiveTab] = useState<'ai' | 'quiz' | 'progress' | 'term'>('ai')
   const [randomTerm, setRandomTerm] = useState(() => TERMS[Math.floor(Math.random() * TERMS.length)])
   
   // 타이핑 애니메이션 상태
@@ -385,9 +384,8 @@ export default function DashboardPage() {
         <div className="flex flex-wrap gap-2 md:gap-4 bg-white/10 backdrop-blur-xl rounded-2xl p-2 md:p-3 shadow-lg border border-white/10">
           {[
             { id: 'ai', label: 'AI 정보', gradient: 'from-blue-500 to-purple-500' },
-            { id: 'quiz', label: '용어 퀴즈', gradient: 'from-purple-500 to-pink-500' },
+                        { id: 'quiz', label: '용어 퀴즈', gradient: 'from-purple-500 to-pink-500' },
             { id: 'progress', label: '진행률', gradient: 'from-pink-500 to-blue-500' },
-            { id: 'news', label: 'AI 뉴스', gradient: 'from-blue-500 to-pink-500' },
             { id: 'term', label: '용어 학습', gradient: 'from-purple-500 to-blue-500' }
           ].map((tab) => (
             <button
@@ -480,35 +478,7 @@ export default function DashboardPage() {
               />
             </section>
           )}
-          {activeTab === 'news' && (
-            <section className="mb-8 md:mb-16">
-              <h2 className="text-2xl md:text-3xl font-extrabold text-white mb-6 md:mb-8 flex items-center gap-3 md:gap-4 drop-shadow">
-                <FaBookOpen className="w-6 h-6 md:w-8 md:h-8" />
-                AI 뉴스
-              </h2>
-              {newsLoading ? (
-                <div className="text-white/80 text-center">뉴스를 불러오는 중...</div>
-              ) : news && news.length > 0 ? (
-                <div className="space-y-4 md:space-y-6">
-                  {news.map((item: any, idx: number) => (
-                    <a 
-                      key={idx} 
-                      href={item.link} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="block glass backdrop-blur-xl rounded-2xl p-4 md:p-6 shadow hover:bg-white/10 transition-all border border-white/10"
-                    >
-                      <h3 className="text-lg md:text-xl font-bold text-white mb-2 line-clamp-2">{item.title}</h3>
-                      <p className="text-white/80 mb-2 line-clamp-3">{item.content}</p>
-                      <span className="text-blue-300 text-sm">뉴스 원문 보기 →</span>
-                    </a>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-white/70 text-center">AI 뉴스가 없습니다.</div>
-              )}
-            </section>
-          )}
+
           {activeTab === 'term' && (
             <section className="mb-8 md:mb-16">
               <LearnedTermsSection sessionId={sessionId} />
